@@ -1,0 +1,144 @@
+<html>
+<head>
+<script type="text/javascript" src="raphael.js"></script>
+<script type="text/javascript" src="jquery-1.8.2.js"></script>
+<script type="text/javascript" src="dracula_graffle.js"></script>
+<script type="text/javascript" src="graph.js"></script>
+<script type="text/javascript">
+
+var Base = function(title){
+	this.title = title;
+};
+Base.prototype = {
+	getLink : function(){
+		return this.title;	//extend this method
+	},
+	getLinkType : function(){
+		return "nothing";
+	}
+};
+
+var Course = function(title){
+	Base.call(this, title);
+	this.projects = new Array();
+	this.students = new Array();
+};
+Course.prototype = new Base();
+Course.prototype.getLink = function(){
+	return this.projects;
+}
+Course.prototype.getLinkType = function(){
+	return "Projects";
+}
+Course.prototype.constructor = Course;
+
+var Student = function(title, course){
+	Base.call(this, title);
+	this.course = course;
+	course.students[course.students.length] = this;
+	
+	this.graphs = new Array();
+};
+Student.prototype = new Base();
+Student.prototype.getLink = function(){
+	return this.graphs;
+}
+Student.prototype.getLinkType = function(){
+	return "Graphs";
+}
+Student.prototype.constructor = Student;
+
+var Project = function(title, course){
+	Base.call(this, title);
+	this.course = course;
+	course.projects[course.projects.length] = this;
+}
+Project.prototype = new Base();
+Project.prototype.getLink = function(){
+	/*for(i in this.course.students){
+		
+	}*/
+	return this.course.students;
+}
+Project.prototype.getLinkType = function(){
+	return "Students";
+}
+Project.prototype.constructor = Project;
+
+var courses = new Array();
+var cs150 = new Course("CS 150");
+
+var alice = new Student("Alice", cs150);
+var bob = new Student("Bob", cs150);
+var jeff = new Student("Jeff", cs150);
+var tom = new Student("Tom", cs150);
+alice.graphs = cs150.students;
+bob.graphs = cs150.students;
+jeff.graphs = cs150.students;
+tom.graphs = cs150.students;
+
+var lab1 = new Project("Lab 1", cs150);
+var lab2 = new Project("Lab 2", cs150);
+
+var cs205 = new Course("CS 205");
+
+courses[0] = cs150;
+courses[1] = cs205;
+
+var table = document.getElementById('table');
+
+function addCol(header, array, col){
+	var th = document.createElement('th');
+	table.rows[0].appendChild(th);
+	th.innerHTML = header;
+	
+	for(var i=0; i<array.length; i++){
+		var cell = (i+1 >= table.rows.length) ? getRowsLastCol(table.insertRow(table.rows.length)) : getRowsLastCol(table.rows[i+1]);
+		cell.innerHTML = array[i].title;
+		cell.onclick = getFunction(i, col, array); 
+	}
+}
+
+function getRowsLastCol(row){
+	var returnVal = false;
+	for(var i=row.cells.length; i<table.rows[0].cells.length; i++){
+		returnVal = row.insertCell(-1);
+	}
+	
+	return returnVal;
+}
+
+function deleteLastCol(){
+	for(var i=0; i<table.rows.length; i++) {
+		if (table.rows[i].cells.length > 1) {
+			table.rows[i].deleteCell(-1);
+		}
+	}
+}
+
+function init(){
+	table = document.getElementById("table");
+	addCol("Courses", courses, 0);
+}
+
+//Admin mode: 
+function getFunction(index, col, array){
+	return function(){
+		while(table.rows[0].cells.length > col+1)
+			deleteLastCol();
+		addCol(array[index].getLinkType(), array[index].getLink(), col+1);
+	};
+}
+
+</script>
+
+</head>
+<body onLoad="init()">
+
+<table id="table" border="1">
+	<tr>
+	</tr>
+</table> 
+
+</body>
+</html>

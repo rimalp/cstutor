@@ -9,26 +9,27 @@ var centerX = 0;
 var centerY = 0;
 var uniqueID = 0;
 
-window.onload = function(){
-	width = $(document).width() - 20;
-    	height = $(document).height() - 60;
+var onload = function(){
+	width = document.getElementById("canvas").offsetWidth - 10;
+    	height = $(document).height() - 130;
 	centerX = width/2;
 	centerY = height/2;
-	var r = Raphael('canvas', width, height);
+	var r = Raphael("canvas", width, height);
 	renderer = r;
 	
 	var g = new Graph();
 	currentGraph = g;
 };
 
-var addNode = function(name){
-	var node = new Node(name);
+var addNode = function(name, description){
+	var node = new Node(name, description);
 	node.setAppearence(centerX, centerY, 40, renderer);
 	currentGraph.addNode(node);
 }
 
-var Node = function(d){
+var Node = function(d, description){
 	this.data = d;
+	this.description = description;
 	this.id = uniqueID++;
 	this.children = new Array();
 	this.owner = focusNode;
@@ -44,6 +45,7 @@ var Node = function(d){
 	this.bottom = false;
 	this.text = false;
 	this.connections = new Array();
+	
 };
 
 Node.prototype = {
@@ -63,16 +65,28 @@ Node.prototype = {
 		this.bottom = r.circle(x, y + rad*.9, rad*.1).attr({fill: "black", stroke: "black", "fill-opacity": .8});
 		this.text = r.text(x, y, this.data);
 		
-		this.body.drag(this.getOnMoveFunction(), this.onStart, this.onEnd);
+		this.body.drag(this.getOnMoveFunction(), this.getOnStartFunction(), this.onEnd);
 		this.body.dblclick(this.getToggleFocusFunction());
 		this.top.click(this.getTopClickFunction());
 		this.bottom.click(this.getBottomClickFunction());
 	},
 	setPosition: function(x, y){
+		var thisX = this.body.attr('cx');
+		var thisY = this.body.attr('cy');
+		
 		this.body.attr({cx: x, cy: y});
 		this.top.attr({cx: x, cy: y - this.radius*.9});
 		this.bottom.attr({cx: x, cy: y + this.radius*.9});
 		this.text.attr({x: x, y: y});
+		
+		if(this.subgraph){
+			for(i in this.subgraph.nodes){
+				var currentNode = this.subgraph.nodes[i];
+				var currentNodeX = currentNode.body.attr('cx');
+				var currentNodeY = currentNode.body.attr('cy');
+				currentNode.setPosition(currentNodeX - (thisX - x), currentNodeY - (thisY - y));
+			}
+		}
 	},
 	getOnMoveFunction: function(){
 		var selfRef = this;
@@ -83,12 +97,19 @@ Node.prototype = {
 			}
 		};
 	},
-	onStart: function(){
-		this.originalX = this.attr('cx');
-		this.originalY = this.attr('cy');
-		this.animate({"fill-opacity": .3}, 500);
+	getOnStartFunction: function(){
+		var selfRef = this;
+		return function(){
+			this.originalX = this.attr('cx');
+			this.originalY = this.attr('cy');
+			if(this.responsive)
+				this.animate({"fill-opacity": .3}, 500);
+		
+			setInfo(selfRef.data, selfRef.description);
+		};
 	},
 	onEnd: function(){
+		if(this.responsive)
 		this.animate({"fill-opacity": .8}, 500);
 	},
 	addConnection: function(node){
@@ -128,7 +149,7 @@ Node.prototype = {
 		var time = 2000;
 		
 		return function(e){
-			if(focusNode.id != selfRef.id){
+			if(!focusNode.subgraph ||focusNode.subgraph.contains(selfRef.id)){
 				focusNode = selfRef;
 				centerX = selfRef.body.attr('cx');	
 				centerY = selfRef.body.attr('cy');
@@ -139,7 +160,7 @@ Node.prototype = {
 
 				selfRef.expand(time, growth, 0);
 			}
-			else{
+			else if(focusNode.id == selfRef.id){
 				focusNode = selfRef.owner;
 				currentGraph = selfRef.graph;
 				centerX = selfRef.owner ? selfRef.owner.body.attr('cx') : width/2;
@@ -255,6 +276,12 @@ Graph.prototype = {
 		this.nodes[this.nodes.length] = node;
 		node.graph = this;
 	},
+	contains: function(id){
+		for(i in this.nodes)
+			if(this.nodes[i].id == id)
+				return true;
+		return false;
+	},
 	
 	//GUI Functions
 	hide: function(){
@@ -263,8 +290,6 @@ Graph.prototype = {
 			for(j in this.nodes[i].connections){
 				this.nodes[i].connections[j].fg.hide();
 				this.nodes[i].connections[j].bg && this.nodes[i].bg.connection.hide();
-				//this.connection.fg.hide();
-			        //this.connection.bg && this.bg.connection.hide();
 			}
 		}
 	},
@@ -272,10 +297,9 @@ Graph.prototype = {
 		for(i in this.nodes){
 			this.nodes[i].show();
 			for(j in this.nodes[i].connections){
+				this.nodes[i].connections[j].draw();
 				this.nodes[i].connections[j].fg.show();
 				this.nodes[i].connections[j].bg && this.nodes[i].bg.connection.show();
-				//this.connection.fg.hide();
-			        //this.connection.bg && this.bg.connection.hide();
 			}
 		}
 	},

@@ -1,0 +1,15 @@
+<html>
+<head>
+    <script type="text/javascript" src="./js/raphael-min.js"></script>
+    <script type="text/javascript" src="./js/dracula_graffle.js"></script>
+    <script type="text/javascript" src="./js/jquery-1.4.2.min.js"></script>
+    <script type="text/javascript" src="./js/dracula_graph.js"></script>
+    <script type="text/javascript" src="prototype.js"></script>
+</head>
+<body>
+<div id="canvas" ></div>
+<button id="add" onclick="addNode(document.getElementById('title_input').value)");">add</button>
+<input id="title_input" />
+</div>
+</body>
+</html>

@@ -107,12 +107,12 @@ Raphael.fn.connection = function Connection(obj1, obj2, style) {
       edge.fg && edge.fg[move]({path:path})
           || (edge.fg = selfRef.path(path)
               .attr({ stroke: style && style.stroke || "#000", fill: "none" })
-              .toBack());
+              .toFront());//changed from toBack to toFront
       edge.bg && edge.bg[move]({path:path})
           || style && style.fill && (edge.bg = style.fill.split
               && selfRef.path(path)
               .attr({ stroke: style.fill.split("|")[0], fill: "none",
-                "stroke-width": style.fill.split("|")[1] || 3 }).toBack());
+                "stroke-width": style.fill.split("|")[1] || 3 }).toFront());//changed from toBack to toFront
       /* setting label */
       style && style.label
           && (edge.label && edge.label.attr({x:(x1+x4)/2, y:(y1+y4)/2})

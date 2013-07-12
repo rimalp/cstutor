@@ -114,6 +114,11 @@ Graph.Node = function(id, node){
     node = node || {};
     node.id = id;
     node.edges = [];
+
+    node.parent = false;
+    node.graph = false;
+    node.subgraph = false;
+    
     node.hide = function() {
         this.hidden = true;
         this.shape && this.shape.hide(); /* FIXME this is representation specific code and should be elsewhere */
@@ -125,6 +130,33 @@ Graph.Node = function(id, node){
         this.shape && this.shape.show();
         for(i in this.edges)
             (this.edges[i].source.id == id || this.edges[i].target == id) && this.edges[i].show && this.edges[i].show();
+    };
+    node.setAppearence = function(x, y, rx, ry, r){
+	var color = Raphael.getColor();
+	this.responsive = true;
+	this.body = r.ellipse(x, y, rx, ry).attr({fill: color, stroke: color, "stroke-width": 2});
+	this.top = r.ellipse(x, y + ry - ry/(10), rx/10, ry/10).attr({fill: "black", stroke: "black", "stroke-width": 2});
+	this.bottom = r.ellipse(x, y - ry + ry/(10), rx/10, ry/10).attr({fill: "black", stroke: "black", "stroke-width": 2});
+	this.text = r.text(x, y, this.label || this.id);
+	this.text.attr({ "font-size": 16, "font-family": "Arial, Helvetica, sans-serif" });
+	
+	this.shape = r.set().push(this.body).push(this.top).push(this.bottom).push(this.text);
+    };
+    node.moveTo = function(x, y, time){
+	var rx = this.body.getBBox().width/2;
+	var ry = this.body.getBBox().height/2;
+	this.body.animate({cx: x, cy: y}, time);
+	this.top.animate({cx: x, cy: y + ry - ry/(10)}, time);
+	this.bottom.animate({cx: x, cy: y - ry + ry/(10)}, time);
+	this.text.animate({x: x, y: y}, time);
+    };
+    node.expand = function(rx, ry, topx, topy, time){
+	var x = this.body.getBBox().x + this.body.getBBox().width/2;
+	var y = this.body.getBBox().y + this.body.getBBox().height/2;
+	this.body.animate({rx: rx, ry: ry, "stroke-opacity": 0.5}, 2000);
+	this.top.animate({rx: rx/10, ry: ry/10, cx: x, cy: y + ry - ry/(10)}, time);
+	this.bottom.animate({rx: rx/10, ry: ry/10, cx: x, cy: y - ry + ry/(10)}, time);
+	this.text.animate({x: topx, y: topy}, time);
     };
     return node;
 };
@@ -148,6 +180,10 @@ Graph.Renderer.Raphael = function(element, graph, width, height) {
     this.radius = 40; /* max dimension of a node */
     this.graph = graph;
     this.mouse_in = false;
+    
+    this.centerX = this.width/2;
+    this.centerY = this.height/2;
+    this.parent_with_focus = false;
 
     /* TODO default node rendering function */
     if(!this.graph.render) {
@@ -160,12 +196,16 @@ Graph.Renderer.Raphael = function(element, graph, width, height) {
      * Dragging
      */
     this.isDrag = false;
-    this.dragger = function (e) {
-        this.dx = e.clientX;
-        this.dy = e.clientY;
-        selfRef.isDrag = this;
-        this.set && this.set.animate({"fill-opacity": .1}, 200) && this.set.toFront();
-        e.preventDefault && e.preventDefault();
+    this.dragger = function (node) {
+	return function(e){	
+	    if(node.responsive){
+		this.dx = e.clientX;
+		this.dy = e.clientY;
+		selfRef.isDrag = this;
+		this.set && this.set.animate({"fill-opacity": .1}, 200) && this.set.toFront();
+		e.preventDefault && e.preventDefault();
+	    }
+	};
     };
     
     var d = document.getElementById(element);
@@ -223,6 +263,12 @@ Graph.Renderer.Raphael.prototype = {
             this.drawEdge(this.graph.edges[i]);
         }
     },
+    
+    hide: function(){
+	for (i in this.graph.nodes) {
+           this.graph.nodes[i].hide();
+        }
+    },
 
     drawNode: function(node) {
         var point = this.translate([node.layoutPosX, node.layoutPosY]);
@@ -232,7 +278,7 @@ Graph.Renderer.Raphael.prototype = {
         if(node.shape) {
             var oBBox = node.shape.getBBox();
             var opoint = { x: oBBox.x + oBBox.width / 2, y: oBBox.y + oBBox.height / 2};
-            node.shape.translate(Math.round(point[0] - opoint.x), Math.round(point[1] - opoint.y));
+            //node.shape.translate(Math.round(point[0] - opoint.x), Math.round(point[1] - opoint.y)); //commented out to prevent nodes from being repositioned on redraw
             this.r.safari();
             return node;
         }/* else, draw new nodes */
@@ -242,40 +288,87 @@ Graph.Renderer.Raphael.prototype = {
         /* if a node renderer function is provided by the user, then use it 
            or the default render function instead */
 	var mousedown1 = this.dragger;
-	var graphRef = this.graph;
 	var selfReff = this;
 	
         if(!node.render) {
             node.render = function(r, node) {
                 /* the default node drawing */
-                var color = Raphael.getColor();
-                var ellipse = r.ellipse(0, 0, 30, 20).attr({fill: color, stroke: color, "stroke-width": 2});
-		var ellipse2 = r.ellipse(0, 19, 3, 3).attr({fill: "black", stroke: "black", "stroke-width": 2});
-		var ellipse3 = r.ellipse(0, -19, 3, 3).attr({fill: "black", stroke: "black", "stroke-width": 2});
+		node.graph = selfReff.graph;
+		node.parent = selfReff.parent_with_focus;
+		node.setAppearence(selfReff.centerX, selfReff.centerY, 70, 70, r);
 		
-		ellipse.mousedown(mousedown1);
+		node.body.dblclick(function(e){
+			if(node.responsive){
+				node.expand(200, 200, selfReff.width/2, 20, 2000);
+				var redraw = setInterval(function(){selfReff.draw();}, 10);
+				var nodeX = node.body.getBBox().x + node.body.getBBox().width/2;
+				var nodeY = node.body.getBBox().y + node.body.getBBox().height/2;
+				for (i in selfReff.graph.nodes) {
+				    //selfReff.graph.nodes[i].shape.animate({x: 30, y: 30, cx: 30, cy: 30}, 2000);
+				    if(selfReff.graph.nodes[i] != node){
+					var currentNode = selfReff.graph.nodes[i];
+					currentNode.responsive = false;
+					var currentX = currentNode.body.getBBox().x + currentNode.body.getBBox().width/2;
+					var currentY = currentNode.body.getBBox().y + currentNode.body.getBBox().height/2;
+					var angle = Math.atan2(currentX - nodeX, currentY - nodeY);
+					selfReff.graph.nodes[i].moveTo(currentX + Math.sin(angle)*200, currentY + Math.cos(angle)*200, 2000);
+				    }
+				}
+				node.responsive = false;
+				selfReff.centerX = nodeX;
+				selfReff.centerY = nodeY;
+				selfReff.graph = node.subgraph || new Graph();
+				selfReff.parent_with_focus = node;
+				node.subgraph = selfReff.graph;
+			}
+			else{
+				var redraw = setInterval(function(){selfReff.draw();}, 10);
+				var nodeX = node.body.getBBox().x + node.body.getBBox().width/2;
+				var nodeY = node.body.getBBox().y + node.body.getBBox().height/2;
+				node.expand(70, 70, nodeX, nodeY, 2000);
+				for (i in selfReff.graph.nodes) {
+				    //selfReff.graph.nodes[i].shape.animate({x: 30, y: 30, cx: 30, cy: 30}, 2000);
+				    if(selfReff.graph.nodes[i] != node){
+					var currentNode = selfReff.graph.nodes[i];
+					currentNode.responsive = true;
+					var currentX = currentNode.body.getBBox().x + currentNode.body.getBBox().width/2;
+					var currentY = currentNode.body.getBBox().y + currentNode.body.getBBox().height/2;
+					var angle = Math.atan2(currentX - nodeX, currentY - nodeY);
+					selfReff.graph.nodes[i].moveTo(currentX - Math.sin(angle)*200, currentY - Math.cos(angle)*200, 2000);
+				    }
+				}
+				node.responsive = true;
+				selfReff.hide();
+				selfReff.graph = node.graph;
+				selfRef.centerX = typeof node.parent.body != 'undefined' ? node.parent.body.getBBox().x + node.parent.body.getBBox().width/2 : selfReff.width/2;
+				selfReff.centerY = typeof node.parent.body != 'undefined' ? node.parent.body.getBBox().y + node.parent.body.getBBox().height/2 : selfReff.height/2;
+				
+			}
+			//clearInterval(redraw);
+		});
+		node.body.mousedown(selfReff.dragger(node));
 		var mousedown2 = function(e){
-			firstNode = node;
-			firstEllipse = ellipse2;
-			ellipse2.attr("stroke", "red");
+			if(node.responsive){
+				firstNode = node;
+				firstEllipse = node.top;
+				node.top.attr("stroke", "red");
+				node.top.attr("fill", "red");
+			}
 		};
-		ellipse2.mousedown(mousedown2);
+		node.top.mousedown(mousedown2);
 		var mousedown3 = function(e){
-			graphRef.addEdge(firstNode.id, node.id);
-			selfReff.draw();
-			secondNode = node;
-			firstEllipse.attr("stroke", "black");
+			if(node.responsive){
+				selfReff.graph.addEdge(firstNode.id, node.id, {directed: true});
+				selfReff.draw();
+				firstEllipse.attr("stroke", "black");
+				firstEllipse.attr("fill", "black");
+			}
 		};
-		ellipse3.mousedown(mousedown3);
+		node.bottom.mousedown(mousedown3);
 		
                 /* set DOM node ID */
-                ellipse.node.id = node.label || node.id;
-                shape = r.set().
-                    push(ellipse).
-                    push(r.text(0, 30, node.label || node.id)).
-		    push(ellipse2).
-		    push(ellipse3);
-                return shape;
+                node.body.node.id = node.label || node.id;
+		return node.shape;
             }
         }
         /* or check for an ajax representation of the nodes */
@@ -307,7 +400,7 @@ Graph.Renderer.Raphael.prototype = {
         /* if edge already has been drawn, only refresh the edge */
         if(!edge.connection) {
             edge.style && edge.style.callback && edge.style.callback(edge); // TODO move this somewhere else
-            edge.connection = this.r.connection(edge.source.shape, edge.target.shape, edge.style);
+            edge.connection = this.r.connection(edge.source.top, edge.target.bottom, edge.style);
             return;
         }
         //FIXME showing doesn't work well

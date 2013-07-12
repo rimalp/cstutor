@@ -10,19 +10,19 @@ window.onload = function() {
     g = new Graph();
 
     /* layout the graph using the Spring layout implementation */
-    var layouter = new Graph.Layout.Spring(g);
+    //var layouter = new Graph.Layout.Spring(g);
     
     /* draw the graph using the RaphaelJS draw implementation */
     renderer = new Graph.Renderer.Raphael('canvas', g, width, height);
     
     redraw = function() {
-        layouter.layout();
+        //layouter.layout();
         renderer.draw();
     };
     
     addNode = function(name){
-	g.addNode(name);
-	layouter.layout();
+	renderer.graph.addNode(name);
+	//layouter.layout();
 	renderer.draw();
     }
 };
