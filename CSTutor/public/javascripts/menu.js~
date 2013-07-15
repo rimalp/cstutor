@@ -75,7 +75,7 @@ var GraphHistory = function(student, project){
 	this.project = project;
 };
 GraphHistory.prototype.addGraph = function(graph){
-	this.graphs[this.graphs.length] = graph;
+	this.graphs[graphs.length] = graph;
 }
 
 var courses = new Array();
