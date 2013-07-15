@@ -15,7 +15,9 @@ app.configure(function(){
 	// all environments
 	app.set('port', process.env.PORT || 3000);
 	app.set('views', __dirname + '/views'); //__dirname is the curent dir
-	app.set('view engine', 'jade'); //default rendering is jade
+	// app.set('view engine', 'html'); //default rendering is jade
+	app.engine('html', require('ejs').renderFile);
+	app.set('view engine', 'html');
 	//can set case sensitive routes, strict routing(forward slash trailing) both disabled by default
 
 	//middlewares - functions that runs before route function gets client request
@@ -27,7 +29,8 @@ app.configure(function(){
 	app.use(express.methodOverride());
 	app.use(app.router);
 	app.use(require('less-middleware')({ src: __dirname + '/public' }));
-	app.use(express.static(path.join(__dirname, 'public')));
+	app.use(app.router); //calls the routes before the one below is called. ex: track what files are downloaded how often
+	app.use(express.static(path.join(__dirname))); //specifies the resource folder
 });
 
 
@@ -39,6 +42,18 @@ if ('development' == app.get('env')) {
 
 app.get('/', routes.index); //call index.js file in routes direcotory
 app.get('/users', user.list);
+app.get('/login', function(req, res){
+	res.send("<h1> Login Page </h1>");
+});
+app.get('/home/:userId', function(req, res){
+
+});
+//process the login request
+app.post('/login', function(req, res){
+	//received form data, see below on how to get that data 
+});
+
+
 
 // more about routes
 	//getting simple requests

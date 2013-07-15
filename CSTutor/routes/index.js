@@ -4,5 +4,5 @@
  */
 
 exports.index = function(req, res){
-  res.render('index', { title: 'Building First Express App with Node js.' });
+  res.render('graph.html', { title: 'Building First Express App with Node js.' });
 };
