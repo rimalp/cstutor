@@ -10,7 +10,7 @@ var centerY = 0;
 var uniqueID = 0;
 
 var onload = function(){
-	width = document.getElementById("canvas").offsetWidth;
+	width = document.getElementById("canvas").offsetWidth - 10;
     	height = $(document).height() - 130;
 	centerX = width/2;
 	centerY = height/2;
@@ -24,6 +24,7 @@ var onload = function(){
 var addNode = function(name, description){
 	var node = new Node(name, description);
 	node.setAppearence(centerX, centerY, 40, renderer);
+	node.display();
 	currentGraph.addNode(node);
 }
 
@@ -40,35 +41,52 @@ var Node = function(d, description){
 	this.responsive = true;
 	this.r = false;
 	this.radius = 10;
+	this.x = 0;
+	this.y = 0;
 	this.body = false;
 	this.top = false;
 	this.bottom = false;
 	this.text = false;
-	this.connections = new Array();
+	this.edges = new Array();
 	
 };
 
 Node.prototype = {
 	addChild: function(node){
 		this.children[this.children.length] = node;
-		this.addConnection(node);
+		return this.addEdge(node);
 	},
 	
 	//GUI Functions
-	
-	setAppearence: function(x, y, rad, r){
-		this.radius = rad;
-		this.r = r;
+	display: function(){
 		var color = Raphael.getColor();
-		this.body = r.circle(x, y, rad).attr({fill: color, "fill-opacity": .8, stroke: color});
-		this.top = r.circle(x, y - rad*.9, rad*.1).attr({fill: "black", stroke: "black", "fill-opacity": .8});
-		this.bottom = r.circle(x, y + rad*.9, rad*.1).attr({fill: "black", stroke: "black", "fill-opacity": .8});
-		this.text = r.text(x, y, this.data);
+		this.body = this.r.circle(this.x, this.y, this.radius).attr({fill: color, "fill-opacity": .8, stroke: color});
+		this.top = this.r.circle(this.x, this.y - this.radius*.9, this.radius*.1).attr({fill: "black", stroke: "black", "fill-opacity": .8});
+		this.bottom = this.r.circle(this.x, this.y + this.radius*.9, this.radius*.1).attr({fill: "black", stroke: "black", "fill-opacity": .8});
+		this.text = this.r.text(this.x, this.y, this.data);
 		
 		this.body.drag(this.getOnMoveFunction(), this.getOnStartFunction(), this.onEnd);
 		this.body.dblclick(this.getToggleFocusFunction());
 		this.top.click(this.getTopClickFunction());
 		this.bottom.click(this.getBottomClickFunction());
+	},
+	remove: function(){
+		if(this.body)
+			this.body.remove();
+		if(this.top)
+			this.top.remove();
+		if(this.bottom)
+			this.bottom.remove();
+		if(this.text)
+			this.text.remove();
+	},
+	setAppearence: function(x, y, rad, r){
+		this.x = x;
+		this.y = y;
+		this.radius = rad;
+		this.r = r;
+		
+		//this.display();
 	},
 	setPosition: function(x, y){
 		var thisX = this.body.attr('cx');
@@ -92,8 +110,10 @@ Node.prototype = {
 		var selfRef = this;
 		return function(dx, dy){
 			if(selfRef.responsive){
+				selfRef.x = this.originalX + dx;
+				selfRef.y = this.originalY + dy;
 				selfRef.setPosition(this.originalX + dx, this.originalY + dy);
-				selfRef.drawConnections();
+				selfRef.drawEdges();
 			}
 		};
 	},
@@ -112,22 +132,23 @@ Node.prototype = {
 		if(this.responsive)
 		this.animate({"fill-opacity": .8}, 500);
 	},
-	addConnection: function(node){
-		var connection = this.r.connection(this.bottom, node.top, {directed: true});
-		this.connections[this.connections.length] = connection;
-		node.connections[node.connections.length] = connection;
-		this.graph.connections[this.graph.connections.length] = connection;
+	addEdge: function(node){
+		var edge = new Edge(this, node);//this.r.connection(this.bottom, node.top, {directed: true});
+		this.edges[this.edges.length] = edge;
+		node.edges[node.edges.length] = edge;
+		this.graph.edges[this.graph.edges.length] = edge;
+		return edge;
 	},
-	drawConnections: function(){
-		for(i in this.connections){
-			this.connections[i].draw();
+	drawEdges: function(){
+		for(i in this.edges){
+			this.edges[i].display();
 		}
 	},
 	getTopClickFunction: function(){
 		var selfRef = this;
 		return function(e){
 			if(firstNode && selfRef.responsive){
-				firstNode.addChild(selfRef);
+				firstNode.addChild(selfRef).display();
 				firstNode.bottom.animate({fill: "black", stroke: "black"}, 250);
 				firstNode = false;
 			}
@@ -174,7 +195,7 @@ Node.prototype = {
 		var i = 0;
 		var selfRef = this;
 		var interval = setInterval(function(){
-			selfRef.graph.drawConnections();
+			selfRef.graph.drawEdges();
 			i+=10;
 			if(i == time+500)
 				clearInterval(interval);
@@ -209,7 +230,7 @@ Node.prototype = {
 		var i = 0;
 		var selfRef = this;
 		var interval = setInterval(function(){
-			selfRef.graph.drawConnections();
+			selfRef.graph.drawEdges();
 			i+=10;
 			if(i == time+500)
 				clearInterval(interval);
@@ -266,9 +287,31 @@ Node.prototype = {
 	
 };
 
-var Graph = function(){
+var Edge = function(sourceNode, destNode){
+	this.sourceNode = sourceNode;
+	this.destNode = destNode;
+	this.path = false;
+};
+Edge.prototype = {
+	display: function(){
+		if(this.path)
+			this.path.remove();
+		var angle = Math.atan2(this.sourceNode.y - this.destNode.y, this.sourceNode.x - this.sourceNode.y);
+		var x1 = this.sourceNode.x + this.sourceNode.radius*Math.cos(angle);
+		var y1 = this.sourceNode.y - this.sourceNode.radius*Math.sin(angle);
+		var x2 = this.destNode.x - this.destNode.radius*Math.cos(angle);
+		var y2 = this.destNode.y + this.destNode.radius*Math.sin(angle);
+		this.path = this.sourceNode.r.path("M " + x1 + " " + y1 + " L " + x2 + " " + y2);
+	},
+	remove: function(){
+		this.path.remove();
+	}
+};
+
+var Graph = function(title, student, project){
 	this.nodes = new Array();
-	this.connections = new Array();
+	this.edges = new Array();
+	this.title = title;
 };
 
 Graph.prototype = {
@@ -284,28 +327,45 @@ Graph.prototype = {
 	},
 	
 	//GUI Functions
+	display: function(){
+		for(i in this.nodes)
+			this.nodes[i].display();
+		for(i in this.edges)
+			this.edges[i].display();
+	},
+	remove: function(){//remove from raphael canvas, ie stop rendering -- not remove from this graph
+		for(i in this.nodes)
+			this.nodes[i].remove();
+		for(i in this.edges)
+			this.edges[i].remove();
+	},
 	hide: function(){
 		for(i in this.nodes){
 			this.nodes[i].hide();
-			for(j in this.nodes[i].connections){
-				this.nodes[i].connections[j].fg.hide();
-				this.nodes[i].connections[j].bg && this.nodes[i].bg.connection.hide();
+			for(j in this.nodes[i].edges){
+				this.nodes[i].edges[j].remove();
+				//this.nodes[i].connections[j].fg.hide();
+				//this.nodes[i].connections[j].bg && this.nodes[i].bg.connection.hide();
 			}
 		}
 	},
 	show: function(){
 		for(i in this.nodes){
 			this.nodes[i].show();
-			for(j in this.nodes[i].connections){
-				this.nodes[i].connections[j].draw();
-				this.nodes[i].connections[j].fg.show();
-				this.nodes[i].connections[j].bg && this.nodes[i].bg.connection.show();
+			for(j in this.nodes[i].edges){
+				this.nodes[i].edges[j].display();
+				//this.nodes[i].connections[j].fg.show();
+				//this.nodes[i].connections[j].bg && this.nodes[i].bg.connection.show();
 			}
 		}
 	},
-	drawConnections: function(){
-		for(i in this.connections){
-			this.connections[i].draw();
+	drawEdges: function(){
+		for(i in this.edges){
+			this.edges[i].display();
 		}
+	},
+	getLink: function(){
+		this.display();
+		return false;
 	}
 };

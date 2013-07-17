@@ -67,7 +67,7 @@
 		
 		<!-- center-->
 		<div class="span8" style="margin: 0px; width: 66%;">
-			<div id="canvas" style="border: 5px solid black; overflow: scroll; height: 95%;"></div>
+			<div id="canvas" style="border: 5px solid black; overflow: scroll; height: 90%;"></div>
 		</div>
 	
 		<!-- right -->

@@ -1,6 +1,6 @@
 var table;
 var menu;
-var mode = "admin";
+var mode = "student";
 var userId = "Alice";
 
 var Base = function(title){
@@ -34,11 +34,11 @@ var Student = function(title, course){
 	this.course = course;
 	course.students[course.students.length] = this;
 	
-	this.graphs = new Array();
+	this.graphHistories = new Array();
 };
 Student.prototype = new Base();
 Student.prototype.getLink = function(){
-	return this.graphs;
+	return this.graphHistories;
 }
 Student.prototype.getLinkType = function(){
 	return "Graphs";
@@ -58,8 +58,9 @@ Project.prototype.getLink = function(){
 	else if(mode = "student"){
 		for(var i=0; i<this.course.students.length; i++){
 			var student = this.course.students[i];
-			if(userId == student.title)
-				return student.projects;
+			if(userId == student.title){
+				return student.graphHistories.getGraphOfProject(this);
+			}
 		}
 	}
 }
@@ -68,6 +69,21 @@ Project.prototype.getLinkType = function(){
 }
 Project.prototype.constructor = Project;
 
+var GraphHistory = function(student, project){
+	Base.call(this, "null title");
+	this.graphs = new Array();
+	this.student = student;
+	this.project = project;
+};
+GraphHistory.prototype = new Base();
+GraphHistory.prototype.getLink = function(){
+	return this.graphs;
+}
+GraphHistory.prototype.addGraph(graph){
+	this.graphs[graphs.length] = graph;
+}
+GraphHistory.constructor = GraphHistory;
+
 var courses = new Array();
 var cs150 = new Course("CS 150");
 
@@ -75,13 +91,24 @@ var alice = new Student("Alice", cs150);
 var bob = new Student("Bob", cs150);
 var jeff = new Student("Jeff", cs150);
 var tom = new Student("Tom", cs150);
-alice.graphs = cs150.students;
-bob.graphs = cs150.students;
-jeff.graphs = cs150.students;
-tom.graphs = cs150.students;
 
 var lab1 = new Project("Lab 1", cs150);
 var lab2 = new Project("Lab 2", cs150);
+
+var graph1 = new Graph("Graph 1");
+var node1 = new Node("node1", "description");
+var node2 = new Node("node2", "description");
+var node3 = new Node("node3", "description");
+var node4 = new Node("node4", "description");
+
+var graph2 = new Graph("Graph 2");
+var node5 = new Node("node5", "description");
+var node6 = new Node("node6", "description");
+var node7 = new Node("node7", "description");
+var node8 = new Node("node8", "description");
+
+alice.graphHistories[0] = new GraphHistory(alice, lab1);
+
 
 var cs205 = new Course("CS 205");
 
@@ -90,6 +117,10 @@ courses[1] = cs205;
 
 function init(){
 	menu = document.getElementById("menu");
+	var listTitle = document.createElement('li');
+	listTitle.className = "nav-header";
+	listTitle.innerHTML = userId;
+	menu.appendChild(listTitle);
 	addSubMenu(menu, courses);
 	onload();
 }
