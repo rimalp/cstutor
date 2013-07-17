@@ -192,7 +192,7 @@ function getGraphOnClickFunction(li, ul, graph){
 		e.stopPropagation();
 		if(li.className == "active"){
 			li.className = "";
-			graph.remove();
+			graph.hide();
 		}
 		else{
 			var child = ul.firstChild;
@@ -201,8 +201,8 @@ function getGraphOnClickFunction(li, ul, graph){
 				child = child.nextSibling;
 			}
 			li.className = "active";
-			currentGraph.remove();
-			graph.display();
+			currentGraph.hide();
+			graph.show();
 			currentGraph = graph;
 		}
 	};

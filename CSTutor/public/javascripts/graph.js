@@ -2,8 +2,11 @@ var firstNode = false;
 var width = 0;
 var height = 0;
 var r = false;
+var miniR = false;
+var miniRect = false;
 var canvas = false;
 var trashcan = false;
+var overTrashcan = false;
 
 var focusNode = false;
 var currentGraph = false;
@@ -13,28 +16,99 @@ var centerY = 0;
 var uniqueID = 0;
 
 var onload = function(){
-	width = 10000;//document.getElementById("canvas").offsetWidth - 10;
-    	height = 10000;//$(document).height();
+	width = 5000;//document.getElementById("canvas").offsetWidth - 10;
+    	height = 5000;//$(document).height();
 	centerX = width/2;
 	centerY = height/2;
 	r = Raphael("canvas", width, height);
+	miniR = Raphael("minimap", document.getElementById("minimap").offsetWidth, document.getElementById("minimap").offsetHeight);
+	miniRect = r.rect(0, 0, document.getElementById("canvas").offsetWidth, document.getElementById("canvas").offsetHeight);
 	canvas = document.getElementById("canvas");
-	trashcan = r.image("../public/images/trashcan.png", width - 50, 0, 50, 50);
+	trashcan = r.image("../public/images/trashcan.png", document.getElementById("canvas").offsetWidth - 60, 0, 50, 50);
+	trashcan.mouseover(function(){
+		overTrashcan = true;
+	});
+	trashcan.mouseout(function(){
+		overTrashcan = false;
+	});
 	
 	var g = new Graph();
 	currentGraph = g;
+
+	$(canvas).on('scroll', function() {
+		trashcan.attr({x: $(canvas).scrollLeft() + document.getElementById("canvas").offsetWidth - 60});
+		trashcan.attr({y: $(canvas).scrollTop()});
+		
+		miniRect.attr({x: $(canvas).scrollLeft()});
+		miniRect.attr({y: $(canvas).scrollTop()});
+		updateMiniMap();
+	});
 };
 
-$(canvas).scroll(function() {
-	trashcan.attr('x') = $(canvas).scrollLeft() + document.getElementById("canvas").offsetWidth - 60;
-	trashcan.attr('y') = $(canvas).scrollTop();
-});
+(function (R) {
+    var cloneSet; // to cache set cloning function for optimisation
+    
+    /**
+     * Clones Raphael element from one paper to another
+     *     
+     * @param {Paper} targetPaper is the paper to which this element 
+     * has to be cloned
+     *
+     * @return RaphaelElement
+     */
+    R.el.cloneToPaper = function (targetPaper) {
+        return (!this.removed &&
+            targetPaper[this.type]().attr(this.attr()));
+    };
+    
+    /**
+     * Clones Raphael Set from one paper to another
+     *     
+     * @param {Paper} targetPaper is the paper to which this element 
+     * has to be cloned
+     *
+     * @return RaphaelSet
+     */
+    R.st.cloneToPaper = function (targetPaper) {
+        targetPaper.setStart();
+        this.forEach(cloneSet || (cloneSet = function (el) {
+            el.cloneToPaper(targetPaper);
+        }));
+        return targetPaper.setFinish();
+    };
+}(Raphael));
+
+var updateMiniMap = function(){
+	miniR.clear();
+	r.forEach(function(element){
+		if(element == miniRect){
+			var newElement = element.cloneToPaper(miniR);
+			newElement.attr({fill: "gray", stroke: "black", "fill-opacity": .1});
+			newElement.drag(	function(dx, dy){
+						newElement.attr({x: this.originalX+dx*(5000/210), y: this.originalY+dy*(5000/210)});
+						canvas.scrollTop = this.originalY+dy*(5000/210);
+						canvas.scrollLeft = this.originalX+dx*(5000/210);
+					},
+					function(){
+						this.originalX = this.attr('x');
+						this.originalY = this.attr('y');
+					},
+					function(){
+						
+					});
+		}
+		else if(element != trashcan)
+			element.cloneToPaper(miniR);
+	});
+	miniR.setViewBox(0, 0, 5000, 5000, true);
+};
 
 var addNode = function(name, description){
 	var node = new Node(name, description);
 	node.setAppearence(centerX, centerY, 40, renderer);
-	node.display();
+	node.show();
 	currentGraph.addNode(node);
+	updateMiniMap();
 }
 
 var Node = function(d, description){
@@ -64,34 +138,23 @@ Node.prototype = {
 		this.children[this.children.length] = node;
 		return this.addEdge(node);
 	},
+	remove: function(){
+		for(var i=0; i<this.edges.length; i++){
+			var edge = this.edges[i];
+			if(edge.sourceNode == this){
+				edge.destNode.edges.splice(edge.destNode.edges.indexOf(edge), 1)[0].hide();
+				
+			}
+			else if(edge.destNode == this){
+				edge.sourceNode.edges.splice(edge.destNode.edges.indexOf(edge), 1)[0].hide();
+			}
+			this.graph.edges.splice(this.graph.edges.indexOf(edge), 1)[0].hide();
+		}
+		this.graph.nodes.splice(this.graph.nodes.indexOf(this), 1)[0].hide();
+		updateMiniMap();
+	},
 	
 	//GUI Functions
-	display: function(){
-		var color = Raphael.getColor();
-		this.body = r.circle(this.x, this.y, this.radius).attr({fill: color, "fill-opacity": .8, stroke: color});
-		//this.top = r.circle(this.x, this.y - this.radius*.9, this.radius*.1).attr({fill: "black", stroke: "black", "fill-opacity": .8});
-		this.bottom = r.circle(this.x, this.y + this.radius*.9, this.radius*.1).attr({fill: "black", stroke: "black", "fill-opacity": .8});
-		this.text = r.text(this.x, this.y, this.data);
-		
-		this.body.drag(this.getOnMoveFunction(), this.getOnStartFunction(), this.getOnEndFunction());
-		this.body.dblclick(this.getToggleFocusFunction());
-		this.body.click(this.getTopClickFunction());
-		this.bottom.click(this.getBottomClickFunction());
-	},
-	remove: function(){
-		if(this.body)
-			this.body.remove();
-		if(this.top)
-			this.top.remove();
-		if(this.bottom)
-			this.bottom.remove();
-		if(this.text)
-			this.text.remove();
-		
-		for(var i=0; i<this.edges.length; i++){
-			this.edges[i].remove();
-		}
-	},
 	setAppearence: function(x, y, rad){
 		this.x = x;
 		this.y = y;
@@ -144,8 +207,10 @@ Node.prototype = {
 		return function(){
 			if(this.responsive)
 				this.animate({"fill-opacity": .8}, 500);
-			if(this.attr('cx') > width-50 && this.attr('cy') <= 50)
+			if(Raphael.isBBoxIntersect(trashcan.getBBox(), this.getBBox())){
 				selfRef.remove();
+			}
+			updateMiniMap();
 		}
 	},
 	addEdge: function(node){
@@ -157,14 +222,15 @@ Node.prototype = {
 	},
 	drawEdges: function(){
 		for(i in this.edges){
-			this.edges[i].display();
+			this.edges[i].show();
 		}
 	},
 	getTopClickFunction: function(){
 		var selfRef = this;
 		return function(e){
 			if(firstNode && selfRef.responsive){
-				firstNode.addChild(selfRef).display();
+				firstNode.addChild(selfRef).show();
+				updateMiniMap();
 				firstNode.bottom.animate({fill: "black", stroke: "black"}, 250);
 				firstNode = false;
 			}
@@ -195,7 +261,7 @@ Node.prototype = {
 				}
 				currentGraph = selfRef.subgraph;
 
-				selfRef.expand(time, growth, 0);
+				selfRef.expand(time, growth*2, 0);
 			}
 			else if(focusNode.id == selfRef.id){
 				focusNode = selfRef.owner;
@@ -203,7 +269,7 @@ Node.prototype = {
 				centerX = selfRef.owner ? selfRef.owner.body.attr('cx') : width/2;
 				centerY = selfRef.owner ? selfRef.owner.body.attr('cy') : height/2;
 
-				selfRef.contract(time, growth, 0);
+				selfRef.contract(time, growth*2, 0);
 			}
 		};
 	},
@@ -289,16 +355,30 @@ Node.prototype = {
 		}
 	},
 	hide: function(){
-		this.body.hide();
-		//this.top.hide();
-		this.bottom.hide();
-		this.text.hide();
+		if(this.body)
+			this.body.remove();
+		if(this.top)
+			this.top.remove();
+		if(this.bottom)
+			this.bottom.remove();
+		if(this.text)
+			this.text.remove();
+	
+		for(var i=0; i<this.edges.length; i++){
+			this.edges[i].hide();
+		}
 	},
 	show: function(){
-		this.body.show();
-		//this.top.show();
-		this.bottom.show();
-		this.text.show();
+		var color = Raphael.getColor();
+		this.body = r.circle(this.x, this.y, this.radius).attr({fill: color, "fill-opacity": .8, stroke: color});
+		//this.top = r.circle(this.x, this.y - this.radius*.9, this.radius*.1).attr({fill: "black", stroke: "black", "fill-opacity": .8});
+		this.bottom = r.circle(this.x, this.y + this.radius*.9, this.radius*.1).attr({fill: "black", stroke: "black", "fill-opacity": .8});
+		this.text = r.text(this.x, this.y, this.data);
+		
+		this.body.drag(this.getOnMoveFunction(), this.getOnStartFunction(), this.getOnEndFunction());
+		this.body.dblclick(this.getToggleFocusFunction());
+		this.body.click(this.getTopClickFunction());
+		this.bottom.click(this.getBottomClickFunction());
 	}
 	
 };
@@ -310,7 +390,7 @@ var Edge = function(sourceNode, destNode){
 	this.arrow = false;
 };
 Edge.prototype = {
-	display: function(){
+	show: function(){
 		if(this.path)
 			this.path.remove();
 		if(this.arrow)
@@ -327,7 +407,7 @@ Edge.prototype = {
 		this.path = r.path("M " + x1 + " " + y1 + " L " + x2 + " " + y2);
 		this.arrow = r.path(p);
 	},
-	remove: function(){
+	hide: function(){
 		this.path.remove();
 		this.arrow.remove();
 	}
@@ -352,41 +432,21 @@ Graph.prototype = {
 	},
 	
 	//GUI Functions
-	display: function(){
+	show: function(){
 		for(i in this.nodes)
-			this.nodes[i].display();
+			this.nodes[i].show();
 		for(i in this.edges)
-			this.edges[i].display();
-	},
-	remove: function(){//remove from raphael canvas, ie stop rendering -- not remove from this graph
-		for(i in this.nodes)
-			this.nodes[i].remove();
-		for(i in this.edges)
-			this.edges[i].remove();
+			this.edges[i].show();
 	},
 	hide: function(){
-		for(i in this.nodes){
+		for(i in this.nodes)
 			this.nodes[i].hide();
-			for(j in this.nodes[i].edges){
-				this.nodes[i].edges[j].remove();
-				//this.nodes[i].connections[j].fg.hide();
-				//this.nodes[i].connections[j].bg && this.nodes[i].bg.connection.hide();
-			}
-		}
-	},
-	show: function(){
-		for(i in this.nodes){
-			this.nodes[i].show();
-			for(j in this.nodes[i].edges){
-				this.nodes[i].edges[j].display();
-				//this.nodes[i].connections[j].fg.show();
-				//this.nodes[i].connections[j].bg && this.nodes[i].bg.connection.show();
-			}
-		}
+		for(i in this.edges)
+			this.edges[i].hide();
 	},
 	drawEdges: function(){
 		for(i in this.edges){
-			this.edges[i].display();
+			this.edges[i].show();
 		}
 	},
 	getLink: function(){

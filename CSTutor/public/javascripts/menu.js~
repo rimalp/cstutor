@@ -160,7 +160,6 @@ courses[0] = cs150;
 courses[1] = cs205;
 
 function init(){
-	
 	menu = document.getElementById("menu");
 	var listTitle = document.createElement('li');
 	listTitle.className = "nav-header";
@@ -202,8 +201,8 @@ function getGraphOnClickFunction(li, ul, graph){
 				child = child.nextSibling;
 			}
 			li.className = "active";
-			currentGraph.remove();
-			graph.display();
+			currentGraph.hide();
+			graph.show();
 			currentGraph = graph;
 		}
 	};

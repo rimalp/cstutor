@@ -26,13 +26,8 @@
 	</script>
 	
 	<style type="text/css">
-		.sidebar-background{
-			background: #70bf32;
-			background: -webkit-linear-gradient(#5500FF, #000000);
-			background: -moz-linear-gradient(#5500FF, #000000);
-			background: -ms-linear-gradient(#5500FF, #000000);
-			background: -o-linear-gradient(#5500FF, #000000);
-			background: linear-gradient(#5500FF, #000000);
+		.gradbg{
+			background: #84B4D5;
 		}
 		
 		.side-box{
@@ -51,28 +46,31 @@
 		
 		.side-box-body{
 			padding: 5px;
+			background: white;
+			border-radius: 0px 0px 6px 6px;
 		}
 	</style>
 </head>
 
-<body onload="init()">
+<body onload="init()" >
 
-	<div class="row-fluid">
+	<div class="row-fluid gradbg" >
 	
 		<!-- left-->
 		<div class="row-fluid span2" style="margin: 0px; width: 17%;">
-			<div id="menu" class="well sidebar-nav span2" style="position: fixed; margin: 0px; width: 17%;">
+			<div id="menu" class="well sidebar-nav span2" style="position: fixed; margin: .5%; width: 16%;">
 			</div>
 		</div>
 		
 		<!-- center-->
 		<div class="span8" style="margin: 0px; width: 66%;">
-			<div id="canvas" style="border: 5px solid black; overflow: scroll; height: 90%;"></div>
+			<div id="canvas" style="border: 5px solid black; overflow: scroll; height: 95%; background: white;"></div>
 		</div>
 	
 		<!-- right -->
 		<div class="span2" style="margin: 0px; width: 17%;">
 			<div style="position: fixed; margin: .5%; width: 16%;">
+				<!-- Node Info -->
 				<div class="side-box">
 					<header class="side-box-header"><h1 style="margin: 0px;">Node Info</h1></header>
 					<div id="info" class="side-box-body">
@@ -80,7 +78,7 @@
 						Description:
 					</div>
 				</div>
-			
+				<!-- New Node -->
 				<div class="side-box">
 					<header class="side-box-header"><h1 style="margin: 0px;">New Node</h1></header>
 					<div class="side-box-body">
@@ -91,6 +89,13 @@
 						<div class="row-fluid">
 							<button class="offset5" id="add_node" onclick="addNode(document.getElementById('node_name').value, document.getElementById('node_description').value);">add</button>
 						</div>
+					</div>
+				</div>
+				<!-- Minimap -->
+				<div class="side-box">
+					<header class="side-box-header"><h1 style="margin: 0px;">MiniMap</h1></header>
+					<div id="minimap" class="side-box-body" style="height: 100px;">
+						
 					</div>
 				</div>
 			</div>
