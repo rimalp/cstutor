@@ -7,6 +7,7 @@ var miniRect = false;
 var canvas = false;
 var trashcan = false;
 var overTrashcan = false;
+var background = false;
 
 var focusNode = false;
 var currentGraph = false;
@@ -21,7 +22,20 @@ var onload = function(){
 	centerX = width/2;
 	centerY = height/2;
 	r = Raphael("canvas", width, height);
-	miniR = Raphael("minimap", document.getElementById("minimap").offsetWidth, document.getElementById("minimap").offsetHeight);
+	background = r.rect(0, 0, width, height);
+	background.attr({fill: "white", stroke: "black"});
+	background.dblclick(function(){
+			console.log(focusNode.data);
+			focusNode.contract();
+			focusNode = focusNode.owner;
+			currentGraph = focusNode.graph;
+		});
+	
+	var sideLength = document.getElementById("minimap").offsetHeight - 2*parseInt(getComputedStyle(document.getElementById("minimap"), null).getPropertyValue('padding-top'));
+	document.getElementById("minimap").setAttribute("style", "padding-left:" + (document.getElementById("minimap").offsetWidth-sideLength)/2 + "px");
+	document.getElementById("minimap").setAttribute("style", "padding-left:" + (document.getElementById("minimap").offsetWidth-sideLength)/2 + "px");
+	
+	miniR = Raphael("minimap", sideLength, sideLength);
 	miniRect = r.rect(0, 0, document.getElementById("canvas").offsetWidth, document.getElementById("canvas").offsetHeight);
 	canvas = document.getElementById("canvas");
 	trashcan = r.image("../public/images/trashcan.png", document.getElementById("canvas").offsetWidth - 60, 0, 50, 50);
@@ -82,13 +96,12 @@ var updateMiniMap = function(){
 	miniR.clear();
 	r.forEach(function(element){
 		if(element == miniRect){
-			console.log('found miniRect');
 			var newElement = element.cloneToPaper(miniR);
 			newElement.attr({fill: "gray", stroke: "black", "fill-opacity": .1});
-			newElement.drag(	function(dx, dy){
-						newElement.attr({x: this.originalX+dx*(5000/210), y: this.originalY+dy*(5000/210)});
-						canvas.scrollTop = this.originalY+dy*(5000/210);
-						canvas.scrollLeft = this.originalX+dx*(5000/210);
+			newElement.drag(function(dx, dy){
+						newElement.attr({x: this.originalX+dx*(5000/miniR.width), y: this.originalY+dy*(5000/miniR.height)});
+						canvas.scrollTop = this.originalY+dy*(5000/miniR.height);
+						canvas.scrollLeft = this.originalX+dx*(5000/miniR.width);
 					},
 					function(){
 						this.originalX = this.attr('x');
@@ -122,6 +135,7 @@ var Node = function(d, description){
 	this.subgraph = false;
 	
 	//GUI components
+	this.color = Raphael.getColor();
 	this.responsive = true;
 	this.radius = 40;
 	this.x = 0;
@@ -164,22 +178,22 @@ Node.prototype = {
 		//this.display();
 	},
 	setPosition: function(x, y){
-		var thisX = this.body.attr('cx');
-		var thisY = this.body.attr('cy');
+		//var thisX = this.body.attr('cx');
+		//var thisY = this.body.attr('cy');
 		
 		this.body.attr({cx: x, cy: y});
 		//this.top.attr({cx: x, cy: y - this.radius*.9});
 		this.bottom.attr({cx: x, cy: y + this.radius*.9});
 		this.text.attr({x: x, y: y});
 		
-		if(this.subgraph){
+		/*if(this.subgraph){
 			for(i in this.subgraph.nodes){
 				var currentNode = this.subgraph.nodes[i];
 				var currentNodeX = currentNode.body.attr('cx');
 				var currentNodeY = currentNode.body.attr('cy');
 				currentNode.setPosition(currentNodeX - (thisX - x), currentNodeY - (thisY - y));
 			}
-		}
+		}*/
 	},
 	getOnMoveFunction: function(){
 		var selfRef = this;
@@ -262,98 +276,59 @@ Node.prototype = {
 				}
 				currentGraph = selfRef.subgraph;
 
-				selfRef.expand(time, growth*2, 0);
-			}
-			else if(focusNode.id == selfRef.id){
-				focusNode = selfRef.owner;
-				currentGraph = selfRef.graph;
-				centerX = selfRef.owner ? selfRef.owner.body.attr('cx') : width/2;
-				centerY = selfRef.owner ? selfRef.owner.body.attr('cy') : height/2;
-
-				selfRef.contract(time, growth*2, 0);
+				selfRef.expand();
 			}
 		};
 	},
-	expand: function(time, amount, direction){
-		var i = 0;
-		var selfRef = this;
-		var interval = setInterval(function(){
-			selfRef.graph.drawEdges();
-			i+=10;
-			if(i == time+500)
-				clearInterval(interval);
-		}, 10);
-		
-		var growth = this.body.attr('r') + amount;
-		for(i in this.graph.nodes){
-			var currentNode = this.graph.nodes[i];
-			if(currentNode != this){
-				currentNode.responsive = false;
-				var angle = Math.atan2(currentNode.body.attr('cy')-this.body.attr('cy'), currentNode.body.attr('cx')-this.body.attr('cx'));
-				currentNode.body.animate({cx: currentNode.body.attr('cx') + growth*Math.cos(angle), cy: currentNode.body.attr('cy') + growth*Math.sin(angle)}, time);
-				//currentNode.top.animate({cx: currentNode.top.attr('cx') + growth*Math.cos(angle), cy: currentNode.top.attr('cy') + growth*Math.sin(angle)}, time);
-				currentNode.bottom.animate({cx: currentNode.bottom.attr('cx') + growth*Math.cos(angle), cy: currentNode.bottom.attr('cy') + growth*Math.sin(angle)}, time);
-				currentNode.text.animate({x: currentNode.text.attr('x') + growth*Math.cos(angle), y: currentNode.text.attr('y') + growth*Math.sin(angle)}, time);
+	expand: function(){
+		//hide current graph
+		for(var i=0; i<this.graph.nodes.length; i++){
+			if(this.graph.nodes[i] != this){
+				this.graph.nodes[i].body.animate({"fill-opacity": 0, "stroke-opacity": 0}, 500);
+				this.graph.nodes[i].text.animate({"fill-opacity": 0, "stroke-opacity": 0}, 500);
+				this.graph.nodes[i].bottom.animate({"fill-opacity": 0, "stroke-opacity": 0}, 500);
 			}
 		}
-		if(direction == 0)
-			this.text.animate({x: width/2, y: 20}, time);
-		else
-			this.text.animate({x: width/2, y: -100}, time);
-		this.body.animate({r: growth, "fill-opacity": .1}, time);
-		//this.top.animate({cy: this.body.attr('cy') - .9*growth, r: growth/10, "fill-opacity": .1}, time);
-		this.bottom.animate({cy: this.body.attr('cy') + .9*growth, r: growth/10, "fill-opacity": .1}, time);
+		for(var i=0; i<this.graph.edges.length; i++){
+			this.graph.edges[i].path.animate({"fill-opacity": 0, "stroke-opacity": 0}, 500);
+			this.graph.edges[i].arrow.animate({"fill-opacity": 0, "stroke-opacity": 0}, 500);
+		}
 		
-		this.responsive = false;
-		this.subgraph.show();
-		if(this.owner)
-			this.owner.expand(time, amount, direction+1);
+		this.body.animate({r: 1000, "fill-opacity": .1}, 1000);
+		this.bottom.remove();
+		this.text.remove();
+		
+		//show new graph
+		var selfRef = this;
+		setTimeout(function(){
+			background.attr({fill: selfRef.body.attr("fill"), stroke: selfRef.body.attr("stroke"), "fill-opacity": selfRef.body.attr("fill-opacity")});
+			selfRef.body.remove();
+			selfRef.subgraph.show();
+			updateMiniMap();
+		}, 1000);
 	},
-	contract: function(time, amount, direction){
-		var i = 0;
+	contract: function(){
+		//hide current graph
+		for(var i=0; i<this.subgraph.nodes.length; i++){
+			this.subgraph.nodes[i].body.animate({"fill-opacity": 0, "stroke-opacity": 0}, 500);
+			this.subgraph.nodes[i].text.animate({"fill-opacity": 0, "stroke-opacity": 0}, 500);
+			this.subgraph.nodes[i].bottom.animate({"fill-opacity": 0, "stroke-opacity": 0}, 500);
+		}
+		for(var i=0; i<this.subgraph.edges.length; i++){
+			this.subgraph.edges[i].path.animate({"fill-opacity": 0, "stroke-opacity": 0}, 500);
+			this.subgraph.edges[i].arrow.animate({"fill-opacity": 0, "stroke-opacity": 0}, 500);
+		}
+		
+		//show new graph
 		var selfRef = this;
-		var interval = setInterval(function(){
-			selfRef.graph.drawEdges();
-			i+=10;
-			if(i == time+500)
-				clearInterval(interval);
-		}, 10);		
-		
-		var growth = this.body.attr('r') - amount;
-		for(i in this.graph.nodes){
-			var currentNode = this.graph.nodes[i];
-			if(currentNode != this){
-				if(direction <= 0)
-					currentNode.responsive = true;
-				var angle = Math.atan2(currentNode.body.attr('cy')-this.body.attr('cy'), currentNode.body.attr('cx')-this.body.attr('cx'));
-				currentNode.body.animate({cx: currentNode.body.attr('cx') - amount*Math.cos(angle), cy: currentNode.body.attr('cy') - amount*Math.sin(angle)}, time);
-				//currentNode.top.animate({cx: currentNode.top.attr('cx') - amount*Math.cos(angle), cy: currentNode.top.attr('cy') - amount*Math.sin(angle)}, time);
-				currentNode.bottom.animate({cx: currentNode.bottom.attr('cx') - amount*Math.cos(angle), cy: currentNode.bottom.attr('cy') - amount*Math.sin(angle)}, time);
-				currentNode.text.animate({x: currentNode.text.attr('x') - amount*Math.cos(angle), y: currentNode.text.attr('y') - amount*Math.sin(angle)}, time);
+		setTimeout(function(){
+			selfRef.graph.show();
+			if(!selfRef.owner)
+				background.attr({fill: "white", stroke: "black"});
+			else{
+				background.attr({fill: selfRef.owner.color, stroke: selfRef.owner.color, "fill-opacity": .1});
 			}
-		}
-		if(direction == 0){
-			this.text.animate({x: this.body.attr('cx'), y: this.body.attr('cy')}, time);
-			
-			this.body.animate({"fill-opacity": .8}, time);
-			//this.top.animate({"fill-opacity": .8}, time);
-			this.bottom.animate({"fill-opacity": .8}, time);
-		}
-		else if(direction == 1){
-			this.text.animate({x: width/2, y: 20}, time);
-		}
-		this.body.animate({r: growth}, time);
-		//this.top.animate({cy: this.body.attr('cy') - .9*growth, r: growth/10}, time);
-		this.bottom.animate({cy: this.body.attr('cy') + .9*growth, r: growth/10}, time);
-		
-		this.responsive = true;
-		if(direction <= 0){
-			this.subgraph.hide();
-		}	
-		if(direction >= 0){
-			if(this.owner)
-				this.owner.contract(time, amount, direction+1);
-		}
+		}, 1000);
 	},
 	hide: function(){
 		if(this.body)
@@ -370,8 +345,7 @@ Node.prototype = {
 		}
 	},
 	show: function(){
-		var color = Raphael.getColor();
-		this.body = r.circle(this.x, this.y, this.radius).attr({fill: color, "fill-opacity": .8, stroke: color});
+		this.body = r.circle(this.x, this.y, this.radius).attr({fill: this.color, "fill-opacity": .8, stroke: this.color});
 		//this.top = r.circle(this.x, this.y - this.radius*.9, this.radius*.1).attr({fill: "black", stroke: "black", "fill-opacity": .8});
 		this.bottom = r.circle(this.x, this.y + this.radius*.9, this.radius*.1).attr({fill: "black", stroke: "black", "fill-opacity": .8});
 		this.text = r.text(this.x, this.y, this.data);

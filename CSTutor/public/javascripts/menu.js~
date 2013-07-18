@@ -88,6 +88,7 @@ var GraphHistory = function(student, project){
 	this.project = project;
 };
 GraphHistory.prototype.addGraph = function(graph){
+	graph.title = this.project.title + " Graph";
 	this.graphs[this.graphs.length] = graph;
 }
 
@@ -102,7 +103,7 @@ var tom = new Student("Tom", cs150);
 var lab1 = new Project("Lab 1", cs150);
 var lab2 = new Project("Lab 2", cs150);
 
-var graph1 = new Graph("Graph 1");
+var graph1 = new Graph();
 var node1 = new Node("node1", "description");
 var node2 = new Node("node2", "description");
 var node3 = new Node("node3", "description");
@@ -112,7 +113,7 @@ graph1.addNode(node2);
 graph1.addNode(node3);
 graph1.addNode(node4);
 
-var graph2 = new Graph("Graph 2");
+var graph2 = new Graph();
 var node5 = new Node("node5", "description");
 var node6 = new Node("node6", "description");
 var node7 = new Node("node7", "description");
@@ -192,7 +193,7 @@ function getGraphOnClickFunction(li, ul, graph){
 		e.stopPropagation();
 		if(li.className == "active"){
 			li.className = "";
-			graph.remove();
+			graph.hide();
 		}
 		else{
 			var child = ul.firstChild;
