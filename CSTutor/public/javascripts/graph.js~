@@ -27,8 +27,8 @@ var onload = function(){
 	background.dblclick(function(){
 			console.log(focusNode.data);
 			focusNode.contract();
-			focusNode = focusNode.owner;
 			currentGraph = focusNode.graph;
+			focusNode = focusNode.owner;
 		});
 	
 	var sideLength = document.getElementById("minimap").offsetHeight - 2*parseInt(getComputedStyle(document.getElementById("minimap"), null).getPropertyValue('padding-top'));
@@ -48,7 +48,7 @@ var onload = function(){
 	
 	var g = new Graph();
 	currentGraph = g;
-
+	
 	$(canvas).on('scroll', function() {
 		trashcan.attr({x: $(canvas).scrollLeft() + document.getElementById("canvas").offsetWidth - 60});
 		trashcan.attr({y: $(canvas).scrollTop()});
@@ -57,6 +57,7 @@ var onload = function(){
 		miniRect.attr({y: $(canvas).scrollTop()});
 		updateMiniMap();
 	});
+	updateMiniMap();
 };
 
 (function (R) {
@@ -388,10 +389,11 @@ Edge.prototype = {
 	}
 };
 
-var Graph = function(title){
+var Graph = function(){
 	this.nodes = new Array();
 	this.edges = new Array();
-	this.title = title;
+	this.title = "";
+	this.graphHistory = false;
 };
 
 Graph.prototype = {
@@ -426,5 +428,46 @@ Graph.prototype = {
 	},
 	getLink: function(){
 		return "graph";
+	},
+	getIndexOfNode: function(node){
+		for(var i=0; i<this.nodes.length; i++){
+			var current = this.nodes[i];
+			if(current == node)
+				return i;
+		}
+	},
+	clone: function(owner){
+		var cloneGraph = new Graph();
+		for(var i=0; i<this.nodes.length; i++){
+			var current = this.nodes[i];
+			var cloneNode = new Node(current.data, current.description);
+			cloneNode.color = current.color;
+			cloneNode.owner = owner;
+			console.log(cloneNode.data + "  " + (cloneNode.subgraph != false));
+			if(cloneNode.subgraph != false){
+				console.log("cloning subgraph");
+				cloneNode.subgraph = current.subgraph.clone(cloneNode);
+			}
+			cloneGraph.addNode(cloneNode);
+		}
+		for(var i=0; i<this.nodes.length; i++){
+			var current = this.nodes[i];
+			var currentClone = cloneGraph.nodes[i];
+			for(var j=0; j<current.children.length; j++){
+				var currentChild = current.children[j];
+				currentClone.addChild(cloneGraph.nodes[this.getIndexOfNode(currentChild)]);
+			}
+		}
+		
+		return cloneGraph;
 	}
 };
+
+
+
+
+
+
+
+
+

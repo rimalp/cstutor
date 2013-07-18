@@ -88,8 +88,15 @@ var GraphHistory = function(student, project){
 	this.project = project;
 };
 GraphHistory.prototype.addGraph = function(graph){
-	graph.title = this.project.title + " Graph";
+	if(this.graphs.length > 0){
+		var previous = this.graphs[this.graphs.length-1];
+		previous.title = previous.title.substring(0, previous.title.length-9);
+	}
+	console.log('adding graph ' + this.graphs.length);
+	graph.title = "Graph Ver. " + (this.graphs.length+1) + "(Current)";
 	this.graphs[this.graphs.length] = graph;
+	graph.graphHistory = this;
+	console.log('added graph ' + this.graphs.length);
 }
 
 var courses = new Array();
@@ -127,33 +134,6 @@ jack.graphHistories[0] = new GraphHistory(jack, lab1);
 jack.graphHistories[0].addGraph(graph1);
 jack.graphHistories[0].addGraph(graph2);
 
-bob.graphHistories[0] = new GraphHistory(bob, lab1);
-bob.graphHistories[0].addGraph(graph1);
-bob.graphHistories[0].addGraph(graph2);
-
-jeff.graphHistories[0] = new GraphHistory(jeff, lab1);
-jeff.graphHistories[0].addGraph(graph1);
-jeff.graphHistories[0].addGraph(graph2);
-
-tom.graphHistories[0] = new GraphHistory(tom, lab1);
-tom.graphHistories[0].addGraph(graph1);
-tom.graphHistories[0].addGraph(graph2);
-
-jack.graphHistories[1] = new GraphHistory(jack, lab2);
-jack.graphHistories[1].addGraph(graph1);
-jack.graphHistories[1].addGraph(graph2);
-
-bob.graphHistories[1] = new GraphHistory(bob, lab2);
-bob.graphHistories[1].addGraph(graph1);
-bob.graphHistories[1].addGraph(graph2);
-
-jeff.graphHistories[1] = new GraphHistory(jeff, lab2);
-jeff.graphHistories[1].addGraph(graph1);
-jeff.graphHistories[1].addGraph(graph2);
-
-tom.graphHistories[1] = new GraphHistory(tom, lab2);
-tom.graphHistories[1].addGraph(graph1);
-tom.graphHistories[1].addGraph(graph2);
 
 var cs205 = new Course("CS 205");
 
@@ -183,6 +163,21 @@ function addSubMenu(li, array){
 		else
 			newLi.onclick = getGraphOnClickFunction(newLi, ul, array[i]);
 		ul.appendChild(newLi);
+		
+		if(link == "graph" && i==array.length-1){
+			var newVersionLi = document.createElement('li');
+			newVersionLi.innerHTML = "<a href='#'>Create New Version</a>";
+			newVersionLi.onclick = function(e){
+				e.stopPropagation();
+				var graph = array[array.length-1];
+				graph.graphHistory.addGraph(graph.clone()); //will be adding array[i].clone()
+				while(li.firstChild.nextSibling)
+					li.removeChild(li.firstChild.nextSibling);
+				addSubMenu(li, graph.graphHistory.graphs);
+				
+			};
+			ul.appendChild(newVersionLi);
+		}
 	}
 	
 	li.appendChild(ul);
