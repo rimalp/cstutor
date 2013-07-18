@@ -7,7 +7,8 @@ var express = require('express')
   , routes = require('./routes')
   , user = require('./routes/user')
   , http = require('http')
-  , path = require('path');
+  , path = require('path')
+  , pg = require('pg');
 
 var app = express();
 
@@ -39,6 +40,7 @@ app.configure(function(){
 if ('development' == app.get('env')) {
   app.use(express.errorHandler());
 }
+
 
 app.get('/', routes.index); //call index.js file in routes direcotory
 app.get('/users', user.list);
@@ -93,11 +95,35 @@ app.post('/login', function(req, res){
 		// });
 
 
-//rendering views
-	app.get("/", function(req, res){
-		res.render("abc.jade")
-	});
+// //rendering views
+// 	app.get("/", function(req, res){
+// 		res.render("abc.jade")
+// 	});
 
 http.createServer(app).listen(app.get('port'), function(){
   console.log('Express server listening on port ' + app.get('port'));
 });
+
+
+
+//Database connection
+var conString = "postgres://prabhat:naing@localhost:5432/tutor";
+var client = new pg.Client(conString);
+client.connect(function(err) {
+  if(err) {
+    return console.error('could not connect to postgres: ', err);
+  }
+  client.query('SELECT NOW() AS "theTime"', function(err, result) {
+    if(err) {
+      return console.error('error running a query.', err);
+    }
+    console.log(result.rows[0].theTime);
+    //output: Tue Jan 15 2013 19:12:47 GMT-600 (CST)
+    client.end();
+  });
+});
+
+var design = require("./public/javascripts/graph.js"); //link to the graph file
+var newGraph = design.Graph("Test Graph");
+console.log(newGraph.title);
+
