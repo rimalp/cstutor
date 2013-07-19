@@ -1,6 +1,6 @@
 var table;
 var menu;
-var mode = "student";
+var mode = "admin";
 var userId = "Jack";
 
 var Base = function(title){
@@ -48,6 +48,7 @@ Student.prototype.getLinkType = function(){
 	return "Graphs";
 }
 Student.prototype.getGraphHistoryOf = function(project){
+	//console.log(this.title + " " + project.title);
 	for(i in this.graphHistories){
 		if(this.graphHistories[i].project == project){
 			return this.graphHistories[i];
@@ -92,11 +93,9 @@ GraphHistory.prototype.addGraph = function(graph){
 		var previous = this.graphs[this.graphs.length-1];
 		previous.title = previous.title.substring(0, previous.title.length-9);
 	}
-	console.log('adding graph ' + this.graphs.length);
 	graph.title = "Graph Ver. " + (this.graphs.length+1) + "(Current)";
 	this.graphs[this.graphs.length] = graph;
 	graph.graphHistory = this;
-	console.log('added graph ' + this.graphs.length);
 }
 
 var courses = new Array();
@@ -164,17 +163,25 @@ function addSubMenu(li, array){
 			newLi.onclick = getGraphOnClickFunction(newLi, ul, array[i]);
 		ul.appendChild(newLi);
 		
-		if(link == "graph" && i==array.length-1){
+		if(mode == "student" && link == "graph" && i==array.length-1){
 			var newVersionLi = document.createElement('li');
 			newVersionLi.innerHTML = "<a href='#'>Create New Version</a>";
 			newVersionLi.onclick = function(e){
 				e.stopPropagation();
 				var graph = array[array.length-1];
-				graph.graphHistory.addGraph(graph.clone()); //will be adding array[i].clone()
+				graph.graphHistory.addGraph(graph.clone(false));
 				while(li.firstChild.nextSibling)
 					li.removeChild(li.firstChild.nextSibling);
 				addSubMenu(li, graph.graphHistory.graphs);
 				
+			};
+			ul.appendChild(newVersionLi);
+		}
+		else if(mode == "admin" && array[i].getLinkType() == "Students" && i==array.length-1){
+			var newVersionLi = document.createElement('li');
+			newVersionLi.innerHTML = "<a href='#'>Create New Project</a>";
+			newVersionLi.onclick = function(e){
+				e.stopPropagation();
 			};
 			ul.appendChild(newVersionLi);
 		}
@@ -188,6 +195,7 @@ function getGraphOnClickFunction(li, ul, graph){
 		e.stopPropagation();
 		if(li.className == "active"){
 			li.className = "";
+			contractAll();
 			graph.hide();
 		}
 		else{
@@ -197,6 +205,7 @@ function getGraphOnClickFunction(li, ul, graph){
 				child = child.nextSibling;
 			}
 			li.className = "active";
+			contractAll();
 			currentGraph.hide();
 			graph.show();
 			currentGraph = graph;
@@ -206,6 +215,8 @@ function getGraphOnClickFunction(li, ul, graph){
 
 var currentFocus = false;
 function getSubMenuOnClickFunction(li, ul, item){
+	//console.log(item.title + " " + item.getLink() + " " + currentFocus.title);
+	var link = item.getLink();
 	return function(e){
 		e.stopPropagation();
 		if(li.className == "active"){
@@ -225,8 +236,8 @@ function getSubMenuOnClickFunction(li, ul, item){
 				child = child.nextSibling;
 			}
 			li.className = "active";
-			addSubMenu(li, item.getLink());
 			currentFocus = item;
+			addSubMenu(li, link);
 		}
 	};
 }
