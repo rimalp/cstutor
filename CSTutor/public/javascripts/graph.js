@@ -6,6 +6,8 @@ var miniR = false;
 var miniRect = false;
 var canvas = false;
 var trashcan = false;
+var scissors = false;
+var edgeClippers = false;
 var overTrashcan = false;
 var background = false;
 
@@ -25,11 +27,70 @@ var onload = function(){
 	background = r.rect(0, 0, width, height);
 	background.attr({fill: "white", stroke: "black"});
 	background.dblclick(function(){
-			console.log(focusNode.data);
 			focusNode.contract();
 			currentGraph = focusNode.graph;
 			focusNode = focusNode.owner;
 		});
+	background.drag(function(dx, dy, x, y){
+				if(edgeClippers){
+					var curX = x - canvas.offsetLeft + canvas.scrollLeft;
+					var curY = y - canvas.offsetTop + canvas.scrollTop;
+					this.pathString += " L " + curX + " " + curY;
+				
+					if(this.path)
+						this.path.remove();
+					this.path = r.path(this.pathString);
+					this.path.attr({"stroke-dasharray": "--", stroke: "red"});
+				
+					for(var i=0; i<currentGraph.edges.length; i++){
+						var currentPath = currentGraph.edges[i].path;
+						var a1 = curY - this.prevY;
+						var b1 = this.prevX - curX;
+						var c1 = a1*this.prevX + b1*this.prevY;;
+						var x1 = currentPath.attr('path')[0][1];
+						var y1 = currentPath.attr('path')[0][2];
+						var x2 = currentPath.attr('path')[1][1];
+						var y2 = currentPath.attr('path')[1][2];
+						var a2 = y2 - y1;
+						var b2 = x1 - x2;
+						var c2 = a2*x1 + b2*y1;
+						var det = a1*b2 - a2*b1;
+						//console.log("(" + this.prevX + ", " + this.prevY + ") (" + curX + ", " + curY + ")___(" + x1 + ", " + y1 + ") (" + x2 + ", " + y2 + ")");
+						if(det != 0){
+							var x = (b2*c1 - b1*c2)/det;
+							var y = (a1*c2 - a2*c1)/det;
+							//console.log("(" + x + ", " + y + ")");
+							if(x >= Math.min(x1, x2) && x <= Math.max(x1, x2) && y >= Math.min(y1, y2) && y <= Math.max(y1, y2) && 
+							   x >= Math.min(this.prevX, curX) && x <= Math.max(this.prevX, curX) && y >= Math.min(this.prevY, curY) && y <= Math.max(this.prevY, curY)){
+								currentPath.attr({stroke: "red"});
+								currentGraph.edges[i].arrow.attr({stroke: "red"});
+								this.edgesToRemove[this.edgesToRemove.length] = currentGraph.edges[i];
+							}
+						}
+					}
+					this.prevX = curX;
+					this.prevY = curY;
+				}
+			},
+			function(x, y){
+				if(edgeClippers){
+					this.startX = x - canvas.offsetLeft + canvas.scrollLeft;
+					this.startY = y - canvas.offsetTop + canvas.scrollTop;
+					this.pathString = "M " + this.startX + " " + this.startY;
+					this.prevX = this.startX;
+					this.prevY = this.startY;
+					this.edgesToRemove = new Array();
+				}
+			},
+			function(){
+				if(edgeClippers){
+					this.path.remove();
+					for(var i=0; i<this.edgesToRemove.length; i++){
+						this.edgesToRemove[i].sourceNode.removeChild(this.edgesToRemove[i].destNode);
+					}
+					updateMiniMap();
+				}
+			});
 	
 	var sideLength = document.getElementById("minimap").offsetHeight - 2*parseInt(getComputedStyle(document.getElementById("minimap"), null).getPropertyValue('padding-top'));
 	document.getElementById("minimap").setAttribute("style", "padding-left:" + (document.getElementById("minimap").offsetWidth-sideLength)/2 + "px");
@@ -38,26 +99,39 @@ var onload = function(){
 	miniR = Raphael("minimap", sideLength, sideLength);
 	miniRect = r.rect(0, 0, document.getElementById("canvas").offsetWidth, document.getElementById("canvas").offsetHeight);
 	canvas = document.getElementById("canvas");
-	trashcan = r.image("../public/images/trashcan.png", document.getElementById("canvas").offsetWidth - 60, 0, 50, 50);
-	trashcan.mouseover(function(){
-		overTrashcan = true;
-	});
-	trashcan.mouseout(function(){
-		overTrashcan = false;
-	});
+	trashcan = r.image("../public/images/trashcan.png", document.getElementById("canvas").offsetWidth - 70, 0, 50, 50);
+	trashcan.attr({opacity: .2});
+	scissors = r.image("../public/images/scissors.png", document.getElementById("canvas").offsetWidth - 70, document.getElementById("canvas").offsetHeight - 70, 50, 50);
+	scissors.attr({opacity: .2});
+	scissors.mousedown(function(){
+				edgeClippers = !edgeClippers;
+				scissors.attr({opacity: edgeClippers ? 1 : .2});
+			});
 	
 	var g = new Graph();
 	currentGraph = g;
 	
 	$(canvas).on('scroll', function() {
-		trashcan.attr({x: $(canvas).scrollLeft() + document.getElementById("canvas").offsetWidth - 60});
+		trashcan.attr({x: $(canvas).scrollLeft() + document.getElementById("canvas").offsetWidth - 70});
 		trashcan.attr({y: $(canvas).scrollTop()});
+		
+		scissors.attr({x: $(canvas).scrollLeft() + document.getElementById("canvas").offsetWidth - 70});
+		scissors.attr({y: $(canvas).scrollTop() + document.getElementById("canvas").offsetHeight - 70});
 		
 		miniRect.attr({x: $(canvas).scrollLeft()});
 		miniRect.attr({y: $(canvas).scrollTop()});
 		updateMiniMap();
 	});
 	updateMiniMap();
+};
+
+//contract all graphs
+var contractAll = function(){
+	while(focusNode != false){
+		focusNode.contract(0);
+		currentGraph = focusNode.graph;
+		focusNode = focusNode.owner;
+	}
 };
 
 (function (R) {
@@ -112,7 +186,7 @@ var updateMiniMap = function(){
 						
 					});
 		}
-		else if(element != trashcan)
+		else if(element != trashcan && element != scissors)
 			element.cloneToPaper(miniR);
 	});
 	miniR.setViewBox(0, 0, 5000, 5000, true);
@@ -120,7 +194,7 @@ var updateMiniMap = function(){
 
 var addNode = function(name, description){
 	var node = new Node(name, description);
-	node.setAppearence(centerX, centerY, 40, renderer);
+	node.setAppearence(canvas.scrollLeft + canvas.offsetWidth/2, canvas.scrollTop + canvas.offsetHeight/2, 40, renderer);
 	node.show();
 	currentGraph.addNode(node);
 	updateMiniMap();
@@ -154,7 +228,19 @@ Node.prototype = {
 		this.children[this.children.length] = node;
 		return this.addEdge(node);
 	},
-	remove: function(){
+	removeChild: function(node){
+		this.children.splice(this.children.indexOf(node), 1);
+		for(var i=0; i<this.edges.length; i++){
+			var current = this.edges[i];
+			if(current.sourceNode == this && current.destNode == node){
+				current.hide();
+				this.edges.splice(this.edges.indexOf(current), 1);
+				node.edges.splice(node.edges.indexOf(current), 1);
+				this.graph.edges.splice(this.graph.edges.indexOf(current), 1);
+			}
+		}
+	},
+	remove: function(){//BUG: doesn't remove from it's parent's children array
 		for(var i=0; i<this.edges.length; i++){
 			var edge = this.edges[i];
 			if(edge.sourceNode == this){
@@ -204,6 +290,10 @@ Node.prototype = {
 				selfRef.y = this.originalY + dy;
 				selfRef.setPosition(this.originalX + dx, this.originalY + dy);
 				selfRef.drawEdges();
+				if(Raphael.isBBoxIntersect(trashcan.getBBox(), this.getBBox()))
+					trashcan.attr({opacity: 1});
+				else if(trashcan.attr("opacity") != .2)
+					trashcan.attr({opacity: .2});
 			}
 		};
 	},
@@ -308,28 +398,36 @@ Node.prototype = {
 			updateMiniMap();
 		}, 1000);
 	},
-	contract: function(){
+	contract: function(time){
+		if(arguments.length == 0)
+			time = 1000;
+		
 		//hide current graph
 		for(var i=0; i<this.subgraph.nodes.length; i++){
-			this.subgraph.nodes[i].body.animate({"fill-opacity": 0, "stroke-opacity": 0}, 500);
-			this.subgraph.nodes[i].text.animate({"fill-opacity": 0, "stroke-opacity": 0}, 500);
-			this.subgraph.nodes[i].bottom.animate({"fill-opacity": 0, "stroke-opacity": 0}, 500);
+			this.subgraph.nodes[i].body.animate({"fill-opacity": 0, "stroke-opacity": 0}, time/2);
+			this.subgraph.nodes[i].text.animate({"fill-opacity": 0, "stroke-opacity": 0}, time/2);
+			this.subgraph.nodes[i].bottom.animate({"fill-opacity": 0, "stroke-opacity": 0}, time/2);
 		}
 		for(var i=0; i<this.subgraph.edges.length; i++){
-			this.subgraph.edges[i].path.animate({"fill-opacity": 0, "stroke-opacity": 0}, 500);
-			this.subgraph.edges[i].arrow.animate({"fill-opacity": 0, "stroke-opacity": 0}, 500);
+			this.subgraph.edges[i].path.animate({"fill-opacity": 0, "stroke-opacity": 0}, time/2);
+			this.subgraph.edges[i].arrow.animate({"fill-opacity": 0, "stroke-opacity": 0}, time/2);
 		}
 		
 		//show new graph
 		var selfRef = this;
-		setTimeout(function(){
-			selfRef.graph.show();
-			if(!selfRef.owner)
-				background.attr({fill: "white", stroke: "black"});
-			else{
-				background.attr({fill: selfRef.owner.color, stroke: selfRef.owner.color, "fill-opacity": .1});
-			}
-		}, 1000);
+		var func = function(){
+				currentGraph.hide();
+				selfRef.graph.show();
+				if(!selfRef.owner)
+					background.attr({fill: "white", stroke: "black"});
+				else{
+					background.attr({fill: selfRef.owner.color, stroke: selfRef.owner.color, "fill-opacity": .1});
+				}
+			   };
+		if(time == 0)
+			func();
+		else
+			setTimeout(func, time);
 	},
 	hide: function(){
 		if(this.body)
@@ -429,6 +527,9 @@ Graph.prototype = {
 	getLink: function(){
 		return "graph";
 	},
+	getLinkType: function(){
+		return "graph";
+	},
 	getIndexOfNode: function(node){
 		for(var i=0; i<this.nodes.length; i++){
 			var current = this.nodes[i];
@@ -441,11 +542,10 @@ Graph.prototype = {
 		for(var i=0; i<this.nodes.length; i++){
 			var current = this.nodes[i];
 			var cloneNode = new Node(current.data, current.description);
+			cloneNode.setAppearence(current.x, current.y, current.radius);
 			cloneNode.color = current.color;
 			cloneNode.owner = owner;
-			console.log(cloneNode.data + "  " + (cloneNode.subgraph != false));
 			if(current.subgraph != false){
-				console.log("cloning subgraph");
 				cloneNode.subgraph = current.subgraph.clone(cloneNode);
 			}
 			cloneGraph.addNode(cloneNode);
