@@ -123,7 +123,7 @@ client.connect(function(err) {
   });
 });
 
-var design = require("./public/javascripts/graph.js"); //link to the graph file
-var newGraph = design.Graph("Test Graph");
-console.log(newGraph.title);
+// var design = require("./public/javascripts/graph.js"); //link to the graph file
+// var newGraph = design.Graph("Test Graph");
+// console.log(newGraph.title);
 
