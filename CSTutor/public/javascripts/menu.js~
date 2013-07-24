@@ -1,5 +1,6 @@
 var table;
 var menu;
+var detail_view;
 var mode = "admin";
 var userId = "Jack";
 
@@ -147,6 +148,7 @@ function init(){
 	menu.appendChild(listTitle);
 	addSubMenu(menu, courses);
 	onload();
+	detail_view = document.getElementById("detail_view");
 }
 
 function addSubMenu(li, array){
@@ -174,14 +176,6 @@ function addSubMenu(li, array){
 					li.removeChild(li.firstChild.nextSibling);
 				addSubMenu(li, graph.graphHistory.graphs);
 				
-			};
-			ul.appendChild(newVersionLi);
-		}
-		else if(mode == "admin" && array[i].getLinkType() == "Students" && i==array.length-1){
-			var newVersionLi = document.createElement('li');
-			newVersionLi.innerHTML = "<a href='#'>Create New Project</a>";
-			newVersionLi.onclick = function(e){
-				e.stopPropagation();
 			};
 			ul.appendChild(newVersionLi);
 		}
@@ -219,7 +213,7 @@ function getSubMenuOnClickFunction(li, ul, item){
 	var link = item.getLink();
 	return function(e){
 		e.stopPropagation();
-		if(li.className == "active"){
+		if(false && li.className == "active"){
 			li.className = "";
 			var firstChild = li.firstChild;
 			while(li.firstChild){
@@ -242,10 +236,69 @@ function getSubMenuOnClickFunction(li, ul, item){
 	};
 }
 
+function displayDetailCourse(course){
+	clearDetailView();
+	showDetailView();
+	
+	var projectDiv = document.createElement("div");
+	getInfoBoxes("Projects", course.projects, projectDiv);
+	var studentDiv = document.createElement("div");
+	getInfoBoxes("Students", course.students, studentDiv);
+	
+	detail_view.appendChild(projectDiv);
+	detail_view.appendChild(studentDiv);
+}
 
+function displayDetailProject(project){
+	clearDetailView();
+	showDetailView();
+	
+	var studentDiv = document.createElement("div");
+	getInfoBoxes("Students", project.course.students, studentDiv);
+	
+	detail_view.appendChild(studentDiv);
+}
 
+function displayDetailStudent(student){
+	clearDetailView();
+	showDetailView();
+	
+	var projectDiv = document.createElement("div");
+	getInfoBoxes("Projects", student.course.projects, projectDiv);
+}
 
+function displayDetailStudentProject(student, project){
+	
+}
 
+function getInfoBoxes(title, array, parent){
+	parent.innerHTML = "<header class='header' id='detail_header'><h1 id='detail_title'>" + title + "</h1></header>";
+	
+	for(var i=0; i<array.length; i++){
+		var current = array[i];
+		var div = document.createElement("div");
+		div.id = current.title;
+		div.className = "info_block";
+		div.innerHTML = "<img class='info_content' width='50' height='50'> \
+				 <a class='info_content' href='#'>" + current.title + "</a>";
+		parent.appendChild(div);
+	}
+}
 
+function showDetailView(){
+	detail_view.style.visibility = "visible";
+	detail_view.style.height = "95%";
+	canvas.style.visibility = "hidden";
+}
+
+function showCanvas(){
+	detail_view.style.visibility = "hidden";
+	detail_view.style.height = "0%";
+	canvas.style.visibility = "visible";
+}
+
+function clearDetailView(){
+	detail_view.innerHTML = "";
+}
 
 

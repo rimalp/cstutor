@@ -5,6 +5,7 @@
 	<script type="text/javascript" src="../public/javascripts/dracula_graffle.js"></script>
 	<script type="text/javascript" src="../public/javascripts/graph.js"></script>
 	<script type="text/javascript" src="../public/javascripts/menu.js"></script>
+	<script type="text/javascript" src="../public/javascripts/newproject.js"></script>
 	<link href="../bootstrap/css/bootstrap.css" rel="stylesheet">
 	<link href="../bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
 
@@ -49,6 +50,22 @@
 			background: white;
 			border-radius: 0px 0px 6px 6px;
 		}
+		
+		.header{
+			text-align: center;
+		}
+		
+		.info_block{
+			border: 1px solid gray;
+			padding: 5px;
+			display: inline-block;
+			margin-right: 10px;
+		}
+		
+		.info_content{
+			display: block;
+		}
+		
 	</style>
 </head>
 
@@ -58,12 +75,22 @@
 	
 		<!-- left-->
 		<div class="row-fluid span2" style="margin: 0px; width: 17%;">
-			<div id="menu" class="well sidebar-nav span2" style="position: fixed; margin: .5%; width: 16%;">
+			<div style="position: fixed; margin: .5%; width: 16%;">
+				<!-- Graph Selection Menu -->
+				<div id="menu" class="well sidebar-nav">
+				</div>
+				<!-- Admin Create Project -->
+				<button onclick="showNewProjectScreen();">Create New Project</button>
 			</div>
 		</div>
 		
 		<!-- center-->
 		<div class="span8" style="margin: 0px; width: 66%;">
+			<!-- detail view -->
+			<div id="detail_view" sytle="display: inline;">
+			</div>
+			
+			<!-- canvas -->
 			<div id="canvas" style="border: 5px solid black; overflow: scroll; height: 95%; background: white;"></div>
 		</div>
 	
@@ -98,19 +125,11 @@
 						
 					</div>
 				</div>
-				<!-- New Version -->
-				<div class="side-box">
-					<header class="side-box-header"><h1 style="margin: 0px;">MiniMap</h1></header>
-					<div id="minimap" class="side-box-body" style="height: 200px;">
-						
-					</div>
-				</div>
 			</div>
 		</div>
 	</div>
 	
-
-	<script src="../bootstrap/js/bootstrap.js"></script>
+    <script src="../bootstrap/js/bootstrap.js"></script>
     <script src="../bootstrap/js/jquery.js"></script>
     <script src="../bootstrap/js/bootstrap-transition.js"></script>
     <script src="../bootstrap/js/bootstrap-alert.js"></script>
