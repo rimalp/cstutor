@@ -4,12 +4,13 @@
  */
 
 var express = require('express')
-  , routes = require('../../routes')
-  , user = require('../../routes/user')
+  , routes = require('/routes')
+  , user = require('/routes/user')
   , http = require('http')
   , path = require('path')
   , pg = require('pg')
-  , db = require('./database');
+  , db = require('/javascripts/database')
+  , index = require('/routes/index');
 
   var app = express();
 
@@ -125,7 +126,7 @@ client.connect(function(err) {
 	var create_Project = "CREATE TABLE IF NOT EXISTS project(id SERIAL, description text, dueDate DATE, courseId integer)";
 	var create_StudentProject = "CREATE TABLE IF NOT EXISTS student_project(projectId integer, email varchar, graphId integer, PRIMARY KEY(projectId, email, graphId))";
 	var create_Node = "CREATE TABLE IF NOT EXISTS node(id SERIAL, x integer, y integer, graphId integer, parentNodeId integer, subGraphId integer, name integer, description integer)";
-	var create_Edge = "CREATE TABLE IF NOT EXISTS edge(graphId integer, src integer, dst integer)";
+	var create_Edge = "CREATE TABLE IF NOT EXISTS edge(graphId integer, src integer, dst integer, PRIMARY KEY(graphId, src, dst))";
 	var create_Graph = "CREATE TABLE IF NOT EXISTS graph(id SERIAL, version integer, topLevel boolean, description text)";
 
   client.query('SELECT NOW() AS "theTime"', function(err, result) {

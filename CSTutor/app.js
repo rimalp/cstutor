@@ -8,9 +8,13 @@ var express = require('express')
   , user = require('./routes/user')
   , http = require('http')
   , path = require('path')
-  , pg = require('pg');
+  , pg = require('pg')
+  , db = require('./public/javascripts/database')
+  , index = require('./routes/index');
 
-var app = express();
+  var app = express();
+
+  var database;
 
 app.configure(function(){
 	// all environments
@@ -29,7 +33,7 @@ app.configure(function(){
 	app.use(express.bodyParser());
 	app.use(express.methodOverride());
 	app.use(app.router);
-	app.use(require('less-middleware')({ src: __dirname + '/public' }));
+	app.use(require('less-middleware')({ src: __dirname }));
 	app.use(app.router); //calls the routes before the one below is called. ex: track what files are downloaded how often
 	app.use(express.static(path.join(__dirname))); //specifies the resource folder
 });
@@ -110,20 +114,89 @@ http.createServer(app).listen(app.get('port'), function(){
 var conString = "postgres://prabhat:naing@localhost:5432/tutor";
 var client = new pg.Client(conString);
 client.connect(function(err) {
-  if(err) {
-    return console.error('could not connect to postgres: ', err);
-  }
+  	if(err) {
+   		return console.error('could not connect to postgres: ', err);
+  	}
+  	//create all the tables here if not exist
+	var create_Student = "CREATE TABLE IF NOT EXISTS student(email varchar PRIMARY KEY, firstName varchar, lastName varchar, password varchar, int frequency)";
+	var create_Prof = "CREATE TABLE IF NOT EXISTS professor(email varchar PRIMARY KEY, firstName varchar, lastName varchar, password varchar)";
+	var create_Course = "CREATE TABLE IF NOT EXISTS course(id SERIAL, name varchar)";
+	var create_ProfCourse = "CREATE TABLE IF NOT EXISTS professor_course(email varchar, courseId integer, PRIMARY KEY(email, courseId))";
+	var create_StudentCourse = "CREATE TABLE IF NOT EXISTS student_course(email varchar, courseId integer, PRIMARY KEY(email, courseId))";
+	var create_Project = "CREATE TABLE IF NOT EXISTS project(id SERIAL, description text, dueDate DATE, courseId integer)";
+	var create_StudentProject = "CREATE TABLE IF NOT EXISTS student_project(projectId integer, email varchar, graphId integer, PRIMARY KEY(projectId, email, graphId))";
+	var create_Node = "CREATE TABLE IF NOT EXISTS node(id SERIAL, x integer, y integer, graphId integer, parentNodeId integer, subGraphId integer, name integer, description integer)";
+	var create_Edge = "CREATE TABLE IF NOT EXISTS edge(graphId integer, src integer, dst integer, PRIMARY KEY(graphId, src, dst))";
+	var create_Graph = "CREATE TABLE IF NOT EXISTS graph(id SERIAL, version integer, topLevel boolean, description text)";
+
   client.query('SELECT NOW() AS "theTime"', function(err, result) {
     if(err) {
       return console.error('error running a query.', err);
     }
     console.log(result.rows[0].theTime);
     //output: Tue Jan 15 2013 19:12:47 GMT-600 (CST)
-    client.end();
   });
+
+    //create table queries execution
+    client.query(create_Student, function(err, result) {
+	    if(err) {
+	      return console.error('error running a create student query.', err);
+	    }
+  	});
+
+    client.query(create_Prof, function(err, result) {
+	    if(err) {
+	      return console.error('error running a CREATE PROFESSOR query.', err);
+	    }
+  	});
+
+    client.query(create_Course, function(err, result) {
+	    if(err) {
+	      return console.error('error running a create COURSE query.', err);
+	    }
+  	});
+    client.query(create_ProfCourse, function(err, result) {
+	    if(err) {
+	      return console.error('error running a query.', err);
+	    }
+  	});
+    client.query(create_StudentCourse, function(err, result) {
+	    if(err) {
+	      return console.error('error running a create STUDENT_COURSE query.', err);
+	    }
+  	});
+    client.query(create_Project, function(err, result) {
+	    if(err) {
+	      return console.error('error running a create PROJECT query.', err);
+	    }
+  	});
+    client.query(create_StudentProject, function(err, result) {
+	    if(err) {
+	      return console.error('error running a create STUDENT_PROJECT query.', err);
+	    }
+  	});
+    client.query(create_Node, function(err, result) {
+	    if(err) {
+	      return console.error('error running a create NODE query.', err);
+	    }
+  	});
+    client.query(create_Edge, function(err, result) {
+	    if(err) {
+	      return console.error('error running a create EDGE query.', err);
+	    }
+  	});
+    client.query(create_Graph, function(err, result) {
+	    if(err) {
+	      return console.error('error running a create GRAPH query.', err);
+	    }
+  	});
+
+    client.on('drain', function(){
+    	console.log("FINISHED TABLE CREATION.");
+    });
 });
 
-// var design = require("./public/javascripts/graph.js"); //link to the graph file
-// var newGraph = design.Graph("Test Graph");
-// console.log(newGraph.title);
+database = db.Database(client);
+
+
 
