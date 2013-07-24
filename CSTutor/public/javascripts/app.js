@@ -8,7 +8,8 @@ var express = require('express')
   , user = require('../../routes/user')
   , http = require('http')
   , path = require('path')
-  , pg = require('pg');
+  , pg = require('pg')
+  , db = require('./database');
 
   var app = express();
 
@@ -116,16 +117,16 @@ client.connect(function(err) {
    		return console.error('could not connect to postgres: ', err);
   	}
   	//create all the tables here if not exist
-	var create_Student = "create table if not exists student( id SERIAL, email varchar, firstName varchar, lastName varchar, password varchar, int frequency)";
-	var create_Prof = "create table if not exists professor(id SERIAL, email varchar, firstName varchar, lastName varchar, password varchar)";
-	var create_Course = "create table if not exists course(id SERIAL, name varchar)";
-	var create_ProfCourse = "create table if not exists professor_course(id SERIAL, professorId integer, courseId integer)";
-	var create_StudentCourse = "create table if not exists student_course(id SERIAL, studentId integer, courseId integer)";
-	var create_Project = "create table if not exists project(id SERIAL, description text, due DATE, courseId integer)";
-	var create_StudentProject = "create table if not exists student_project(id SERIAL, projectId integer, graphId integer)";
-	var create_Node = "create table if not exists node(id SERIAL, x integer, y integer, parentNodeId integer, subgraphId integer, name integer, description integer)";
-	var create_Edge = "create table if not exists edge(id SERIAL, src integer, dst integer)";
-	var create_Graph = "create table if not exists graph(id SERIAL, version integer, description text)";
+	var create_Student = "CREATE TABLE IF NOT EXISTS student(email varchar PRIMARY KEY, firstName varchar, lastName varchar, password varchar, int frequency)";
+	var create_Prof = "CREATE TABLE IF NOT EXISTS professor(email varchar PRIMARY KEY, firstName varchar, lastName varchar, password varchar)";
+	var create_Course = "CREATE TABLE IF NOT EXISTS course(id SERIAL, name varchar)";
+	var create_ProfCourse = "CREATE TABLE IF NOT EXISTS professor_course(email varchar, courseId integer, PRIMARY KEY(email, courseId))";
+	var create_StudentCourse = "CREATE TABLE IF NOT EXISTS student_course(email varchar, courseId integer, PRIMARY KEY(email, courseId))";
+	var create_Project = "CREATE TABLE IF NOT EXISTS project(id SERIAL, description text, dueDate DATE, courseId integer)";
+	var create_StudentProject = "CREATE TABLE IF NOT EXISTS student_project(projectId integer, email varchar, graphId integer, PRIMARY KEY(projectId, email, graphId))";
+	var create_Node = "CREATE TABLE IF NOT EXISTS node(id SERIAL, x integer, y integer, graphId integer, parentNodeId integer, subGraphId integer, name integer, description integer)";
+	var create_Edge = "CREATE TABLE IF NOT EXISTS edge(graphId integer, src integer, dst integer)";
+	var create_Graph = "CREATE TABLE IF NOT EXISTS graph(id SERIAL, version integer, topLevel boolean, description text)";
 
   client.query('SELECT NOW() AS "theTime"', function(err, result) {
     if(err) {
@@ -194,7 +195,7 @@ client.connect(function(err) {
     });
 });
 
-database = new Database(client);
+database = db.Database(client);
 
 
 

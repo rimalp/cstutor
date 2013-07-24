@@ -204,10 +204,11 @@ var Node = function(d, description){
 	this.data = d;
 	this.description = description;
 	this.id = uniqueID++;
-	this.children = new Array();
-	this.owner = focusNode;
+	this.children = new Array(); //children node array
+	this.owner = focusNode;//parent node
 	this.graph = false;
 	this.subgraph = false;
+	this.subgraphId = -1;
 	
 	//GUI components
 	this.color = Raphael.getColor();
@@ -364,6 +365,7 @@ Node.prototype = {
 				centerY = selfRef.body.attr('cy');
 				if(!selfRef.subgraph){
 					selfRef.subgraph = new Graph();
+					selfRef.subgraph.topLevel = false;
 				}
 				currentGraph = selfRef.subgraph;
 
@@ -488,10 +490,13 @@ Edge.prototype = {
 };
 
 var Graph = function(){
+	this.id = -1;
+	this.version = 1;
 	this.nodes = new Array();
 	this.edges = new Array();
 	this.title = "";
 	this.graphHistory = false;
+	this.topLevel = true;
 };
 
 Graph.prototype = {
@@ -539,6 +544,8 @@ Graph.prototype = {
 	},
 	clone: function(owner){
 		var cloneGraph = new Graph();
+		cloneGraph.graphHistory = true;
+		cloneGraph.version = this.version+1;
 		for(var i=0; i<this.nodes.length; i++){
 			var current = this.nodes[i];
 			var cloneNode = new Node(current.data, current.description);
