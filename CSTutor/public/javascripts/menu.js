@@ -20,6 +20,8 @@ Base.prototype = {
 
 var Course = function(title){
 	Base.call(this, title);
+	this.year = 2013;
+	this.semester = "fall";
 	this.projects = new Array();
 	this.students = new Array();
 };
@@ -30,10 +32,17 @@ Course.prototype.getLink = function(){
 Course.prototype.getLinkType = function(){
 	return "Projects";
 }
+Course.prototype.getJSON = function(){
+	return {name: this.title, year: this.year, semester: this.semester};
+};
 Course.prototype.constructor = Course;
 
 var Student = function(title, course){
 	Base.call(this, title);
+	this.firstName = "";
+	this.lastName = "";
+	this.password = "";
+	this.isAdmin = false;//use this
 	this.course = course;
 	course.students[course.students.length] = this;
 	
@@ -59,6 +68,9 @@ Student.prototype.getGraphHistoryOf = function(project){
 	}
 	return false;
 }
+Student.prototype.getJSON = function(){
+	return {email: this.title, firstName: this.firstName, lastName: this.lastName, password: this.password, admin: this.isAdmin};
+};
 Student.prototype.constructor = Student;
 
 var Project = function(title, course){
@@ -82,6 +94,25 @@ Project.prototype.getLink = function(){
 		}
 	}
 }
+Project.prototype.executeNewVersionPrompts = function(student){
+	for(var i=0; i<this.prompts.length; i++){
+		var current = this.prompts[i];
+		if(current.eventType == "version"){
+			student.getGraphHistoryOf(this).addResponse(current.execute());
+		}
+	}
+};
+Project.prototype.executeNodeFrequencyPrompts = function(student, nodeCount){
+	for(var i=0; i<this.prompts.length; i++){
+		var current = this.prompts[i];
+		if(current.eventType == "frequency" && currentGraph.nodes.length%current.frequency == 0){
+			student.getGraphHistoryOf(this).addResponse(current.execute());
+		}
+	}
+};
+Project.prototype.getJSON = function(){
+	return {name: this.title, course_name: this.course.title, course_year: this.course.year, course_semester: this.course.semester};
+};
 Project.prototype.getLinkType = function(){
 	return "Students";
 }
@@ -89,6 +120,7 @@ Project.prototype.constructor = Project;
 
 var GraphHistory = function(student, project){
 	this.graphs = new Array();
+	this.responses = new Array();
 	this.student = student;
 	this.project = project;
 };
@@ -101,19 +133,36 @@ GraphHistory.prototype.addGraph = function(graph){
 	graph.title = "Graph Ver. " + (this.graphs.length+1) + "(Current)";
 	this.graphs[this.graphs.length] = graph;
 	graph.graphHistory = this;
-}
+};
+GraphHistory.prototype.addResponse = function(response){
+	this.responses[this.responses.length] = response;
+};
 
 var Prompt = function(text, requiresInput, eventType, frequency/*optional*/){
 	this.text = text;
 	this.requiresInput = requiresInput;
 	this.eventType = eventType;	//version, save, frequency
-	this.response = false;
 	this.frequency = frequency;
-	this.versionWhenAnswered = 0;	//what version of the graph the student was working on when the prompt was answered
 };
 Prompt.prototype = {
-	
+	execute: function(){
+		var response = new Response(this);
+		response.versionWhenAnswered = currentGraph.version;
+		
+		if(this.requiresInput)
+			response.text = prompt(this.text);
+		else
+			alert(this.text);
+		
+		return response;
+	}
 };
+
+var Response = function(prompt){
+	this.prompt = prompt;
+	this.text = "";
+	this.versionWhenAnswered = 0;	//what version of the graph the student was working on when the prompt was answered
+}
 
 var courses = new Array();
 var cs150 = new Course("CS 150");
@@ -506,6 +555,7 @@ function newGraphFunction(){
 	var newGraph = currentGraphHistory.graphs[currentGraphHistory.graphs.length-1].clone();
 	currentGraphHistory.addGraph(newGraph);
 	showGraph(newGraph);
+	currentProject.executeNewVersionPrompts(currentStudent);
 }
 
 function showGraph(graph){
@@ -513,6 +563,7 @@ function showGraph(graph){
 	currentGraph.hide();
 	graph.show();
 	currentGraph = graph;
+	setTitle("<h1>" + graph.title + "</h1>");
 };
 
 function setTitle(title){

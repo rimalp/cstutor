@@ -198,6 +198,9 @@ var addNode = function(name, description){
 	node.show();
 	currentGraph.addNode(node);
 	updateMiniMap();
+	
+	//for frequency prompts
+	currentProject.executeNodeFrequencyPrompts(currentStudent, currentGraph.nodes.length);
 }
 
 var Node = function(d, description){
@@ -225,6 +228,9 @@ var Node = function(d, description){
 };
 
 Node.prototype = {
+	getJSON: function(){
+		return {id: this.id, description: this.description, x: this.x, y: this.y, color: this.color};
+	},
 	addChild: function(node){
 		this.children[this.children.length] = node;
 		return this.addEdge(node);
@@ -467,6 +473,9 @@ var Edge = function(sourceNode, destNode){
 	this.arrow = false;
 };
 Edge.prototype = {
+	getJSON: function(){
+		return {sourceId: this.sourceNode.id, destinationId: this.destNode.id};
+	},
 	show: function(){
 		if(this.path)
 			this.path.remove();
@@ -497,11 +506,13 @@ var Graph = function(){
 	this.edges = new Array();
 	this.title = "";
 	this.graphHistory = false;
-	this.topLevel = true;
-	//link to parent node
+	this.parent = false;
 };
 
 Graph.prototype = {
+	getJSON: function(){
+		return {id: this.id, parent: this.parent, version: this.version, title: this.version, student: this.graphHistory.student.title, course_name: this.graphHistory.project.course.title, course_year: this.graphHistory.project.course.year, course_semester: this.graphHistory.project.course.semester};
+	},
 	addNode: function(node){
 		this.nodes[this.nodes.length] = node;
 		node.graph = this;
@@ -573,7 +584,26 @@ Graph.prototype = {
 	}
 };
 
-
+function sendGraph(graph){
+	var graphInput = document.getElementById("graph_input");
+	var nodeInput = document.getElementById("node_input");
+	var edgeInput = document.getElementById("edge_input");
+	
+	graphInput.value = JSON.stringify(graph.getJSON());
+	var nodeArray = [];
+	for(var i=0; i<graph.nodes.length; i++){
+		nodeArray[nodeArray.length] = graph.nodes[i].getJSON();
+		//nodeInput.value += JSON.stringify(graph.nodes[i].getJSON());
+	}
+	nodeInput.value = JSON.stringify(nodeArray);
+	
+	var edgeArray = [];
+	for(var i=0; i<graph.edges.length; i++){
+		edgeArray[edgeArray.length] = graph.edges[i].getJSON();
+		//edgeInput.value += JSON.stringify(graph.edges[i].getJSON());
+	}
+	edgeInput.value = JSON.stringify(edgeArray);
+};
 
 
 
