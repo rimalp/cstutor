@@ -1,7 +1,10 @@
 var client = null;
 
+// var models = require('./menu.js');
+
 var Database = function(connection){
 	client = connection;
+	testDB();
 }
 module.exports.Database = Database;
 
@@ -58,7 +61,7 @@ Database.prototype = {
 		rawQuery(q, function(err, result){
 			var labs = new Array();
 			for(var row in result){
-				var lab = new Course();
+				var lab = new Project();
 				lab.id = row.id;
 				lab.description = row.description;
 				lab.date = row.date;
@@ -218,6 +221,29 @@ Database.prototype = {
 
 	
 	//CREATE queries ------------------------------------------------------------------------
+	createProfessor: function(prof, callback){
+		client.query("INSERT INTO professor(email, firstName, lastName, password) VALUES($1,$2,$3,$4) RETURNING id",
+			[prof.email, prof.firstName, prof.lastName, prof.password], function(err, result){
+				if(err){
+					callback(err);
+				}else{
+					prof.id = result.rows[0].id;
+					callback(null, prof);
+				}
+			});
+	},
+	createStudent: function(student, callback){
+		client.query("INSERT INTO student(email, firstName, lastName, password, frequency) VALUES($1,$2,$3,$4, $5) RETURNING id",
+			[student.email, student.firstName, student.lastName, student.password, student.frequency], function(err, result){
+				if(err){
+					callback(err);
+				}else{
+					student.id = result.rows[0].id;
+					callback(null, student);
+				}
+			});
+	},
+
 	createCourse: function(course, professor, callback){
 		client.query ("INSERT INTO course  (name) VALUES ($1) RETURNING id", [course.name], function(err, result){
 			if(err != null)
@@ -567,40 +593,41 @@ Database.prototype = {
 
 };
 
+var testDB = function(){
 
+}
 //OTHER DB Model Objects - course, student, professor, lab
-var Course = function(){
-	this.id = -1;
-	this.description = "";
-}
-module.exports.Course = Course;
+// var Course = function(id, description){
+// 	this.id = id;
+// 	this.description = description;
+// }
+// module.exports.Course = Course;
 
 
-var Student = function(){
-	this.email = "";
-	this.firstName = "";
-	this.lastName = "";
-	this.password = "";
-	this.frequency = 1;
-}
-module.exports.Student = Professor;
+// var Student = function(email, firstName, lastName, password, frequency){
+// 	this.email = email;
+// 	this.firstName = firstName;
+// 	this.lastName = lastName;
+// 	this.password = password;
+// 	this.frequency = frequency;
+// }
+// module.exports.Student = Professor;
 
 
-var Professor = function(){
-	this.email = "";
-	this.firstName = "";
-	this.lastName = "";
-	this.password = "";
-	this.frequency = 1;
-}
-module.exports.Professor = Professor;
+// var Professor = function(email, firstName, lastName, password){
+// 	this.email = email;
+// 	this.firstName = firstName;
+// 	this.lastName = lastName;
+// 	this.password = password;
+// }
+// module.exports.Professor = Professor;
 
 
-var Lab = function(){
-	this.id = -1;
-	this.description = "";
-	this.date = new Date();
-	this.courseId = -1;
-}
-module.exports.Lab = Lab;
+// var Lab = function(id, description, date, courseid){
+// 	this.id = id;
+// 	this.description = description;
+// 	this.date = date || new Date();
+// 	this.courseId = courseid;
+// }
+// module.exports.Lab = Lab;
 

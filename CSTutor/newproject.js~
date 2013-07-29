@@ -1,0 +1,5 @@
+var canvasHolder = false;
+
+function showNewProjectScreen(){
+	canvasHolder = ;
+}

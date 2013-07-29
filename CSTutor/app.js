@@ -9,12 +9,11 @@ var express = require('express')
   , http = require('http')
   , path = require('path')
   , pg = require('pg')
-  , db = require('./public/javascripts/database')
+  , db = require('./database')
   , index = require('./routes/index');
 
   var app = express();
 
-  var database;
 
 app.configure(function(){
 	// all environments
@@ -46,8 +45,8 @@ if ('development' == app.get('env')) {
 }
 
 
-app.get('/', routes.index); //call index.js file in routes direcotory
-app.get('/users', user.list);
+app.get('/', routes.index); //login page
+app.get('/users/:email', user.list); //user home page
 app.get('/login', function(req, res){
 	res.send("<h1> Login Page </h1>");
 });
@@ -57,6 +56,7 @@ app.get('/home/:userId', function(req, res){
 //process the login request
 app.post('/login', function(req, res){
 	//received form data, see below on how to get that data 
+	console.log(req.body);
 });
 
 
@@ -111,8 +111,9 @@ http.createServer(app).listen(app.get('port'), function(){
 
 
 //Database connection
-var conString = "postgres://prabhat:naing@localhost:5432/tutor";
+var conString = "postgres://ww2.cs.lafayette.edu:rimalp@ww2.cs.lafayette.edu:5432/rimalp";
 var client = new pg.Client(conString);
+// var client = new pg.Client({user: 'rimalp', password: 'rimalp', database: 'gfb', host: 'ww2.cs.lafayette.edu', port: 5432 });
 client.connect(function(err) {
   	if(err) {
    		return console.error('could not connect to postgres: ', err);
@@ -125,9 +126,12 @@ client.connect(function(err) {
 	var create_StudentCourse = "CREATE TABLE IF NOT EXISTS student_course(email varchar, courseId integer, PRIMARY KEY(email, courseId))";
 	var create_Project = "CREATE TABLE IF NOT EXISTS project(id SERIAL, description text, dueDate DATE, courseId integer)";
 	var create_StudentProject = "CREATE TABLE IF NOT EXISTS student_project(projectId integer, email varchar, graphId integer, PRIMARY KEY(projectId, email, graphId))";
-	var create_Node = "CREATE TABLE IF NOT EXISTS node(id SERIAL, x integer, y integer, graphId integer, parentNodeId integer, subGraphId integer, name integer, description integer)";
+	var create_Node = "CREATE TABLE IF NOT EXISTS node(id SERIAL, x integer, y integer, graphId integer, parentNodeId integer, name integer, description integer, color varchar)";
 	var create_Edge = "CREATE TABLE IF NOT EXISTS edge(graphId integer, src integer, dst integer, PRIMARY KEY(graphId, src, dst))";
-	var create_Graph = "CREATE TABLE IF NOT EXISTS graph(id SERIAL, version integer, topLevel boolean, description text)";
+	var create_Graph = "CREATE TABLE IF NOT EXISTS graph(id SERIAL, parentNodeId integer, version integer, topLevel boolean, description text)";
+
+	var create_Question = "CREATE TABLE IF NOT EXISTS question(id SERIAL, projectId integer, question varchar)";
+	var create_Answer = "CREATE TABLE IF NOT EXISTS answer(id SERIAL, questionId integer, graphId integer, answer varchar)";
 
   client.query('SELECT NOW() AS "theTime"', function(err, result) {
     if(err) {
@@ -196,7 +200,11 @@ client.connect(function(err) {
     });
 });
 
-database = db.Database(client);
+exports.database = db.Database(client);
+
+
+console.log("database object created");
+
 
 
 
