@@ -1,8 +1,10 @@
 var table;
 var menu;
-var detail_view;
+var detail_view, detail_view_container, center_header;
 var mode = "admin";
 var userId = "Jack";
+var currentProject = false;
+var currentStudent = false;
 
 var Base = function(title){
 	this.title = title;
@@ -63,6 +65,7 @@ var Project = function(title, course){
 	Base.call(this, title);
 	this.course = course;
 	course.projects[course.projects.length] = this;
+	this.prompts = new Array();
 }
 Project.prototype = new Base();
 Project.prototype.getLink = function(){
@@ -94,10 +97,23 @@ GraphHistory.prototype.addGraph = function(graph){
 		var previous = this.graphs[this.graphs.length-1];
 		previous.title = previous.title.substring(0, previous.title.length-9);
 	}
+	graph.version = this.graphs.length+1;
 	graph.title = "Graph Ver. " + (this.graphs.length+1) + "(Current)";
 	this.graphs[this.graphs.length] = graph;
 	graph.graphHistory = this;
 }
+
+var Prompt = function(text, requiresInput, eventType, frequency/*optional*/){
+	this.text = text;
+	this.requiresInput = requiresInput;
+	this.eventType = eventType;	//version, save, frequency
+	this.response = false;
+	this.frequency = frequency;
+	this.versionWhenAnswered = 0;	//what version of the graph the student was working on when the prompt was answered
+};
+Prompt.prototype = {
+	
+};
 
 var courses = new Array();
 var cs150 = new Course("CS 150");
@@ -149,6 +165,14 @@ function init(){
 	addSubMenu(menu, courses);
 	onload();
 	detail_view = document.getElementById("detail_view");
+	detail_view_container = document.getElementById("detail_view_container");
+	center_header = document.getElementById("center_header");
+	if(mode == "admin"){
+		showDetailView();
+	}
+	else {
+		showCanvas();
+	}
 }
 
 function addSubMenu(li, array){
@@ -236,14 +260,187 @@ function getSubMenuOnClickFunction(li, ul, item){
 	};
 }
 
+function displayNewProject(course, project, backTo){
+	clearDetailView();
+	showDetailView();
+	
+	setTitle("<h1>New Project for " + course.title + "</h1>");
+	
+	//Prompts
+	var promptArray = (!project)? new Array() : project.prompts;
+	
+	var titleDiv = document.createElement("div");
+	var titleLabel = document.createElement("p");
+	titleLabel.innerHTML = "Title:";
+	titleLabel.style = "display: inline;";
+	titleDiv.appendChild(titleLabel);
+	
+	var titleInput = document.createElement("input");
+	titleInput.value = (!project)? "": project.title;
+	titleDiv.appendChild(titleInput);
+	
+	var promptDiv = document.createElement("div");
+	var newQuestion = document.createElement("a");
+	newQuestion.innerHTML = "New Prompt/Question...";
+	newQuestion.onclick = function(){promptArray[promptArray.length] = new Prompt("", false, "version"); addNewPrompt(promptArray, promptArray.length-1, promptDiv)};
+	promptDiv.appendChild(newQuestion);
+	
+	for(var i=0; i<promptArray.length; i++){
+		addNewPrompt(promptArray, i, promptDiv);
+	}
+	
+	var confirmDiv = document.createElement("div");
+	var doneButton = document.createElement("button");
+	doneButton.innerHTML = "Done";
+	doneButton.onclick = function(){
+					if(!project){
+						project = new Project(titleInput.value, course);
+						project.prompts = promptArray;
+					}
+					else{
+						project.title = titleInput.value;
+					}
+					backTo ? displayDetailProject(project) : displayDetailCourse(course);
+				};
+	confirmDiv.appendChild(doneButton);
+	
+	var cancelButton = document.createElement("button");
+	cancelButton.innerHTML = "Cancel";
+	cancelButton.onclick = function(){
+					backTo ? displayDetailProject(project) : displayDetailCourse(course);
+				};
+	confirmDiv.appendChild(cancelButton);
+	
+	detail_view.appendChild(titleDiv);
+	detail_view.appendChild(promptDiv);
+	detail_view.appendChild(confirmDiv);
+}
+
+function addNewPrompt(promptArray, index, parent){
+	var prompt = promptArray[index];
+	var last = parent.removeChild(parent.lastChild);
+	
+	var div = document.createElement("div");
+	
+	// Prompt or Question
+	var actionDropdown = document.createElement("select");
+	actionDropdown.id = "dropdown";
+	var promptOption = document.createElement("option");
+	promptOption.value = "prompt";
+	promptOption.innerHTML = "Prompt";
+	promptOption.onclick = function(){prompt.requiresInput = false;};
+	actionDropdown.appendChild(promptOption);
+	
+	var questionOption = document.createElement("option");
+	questionOption.value = "question";
+	questionOption.innerHTML = "Question";
+	questionOption.onclick = function(){prompt.requiresInput = true;};
+	actionDropdown.appendChild(questionOption);
+	div.appendChild(actionDropdown);
+	
+	if(prompt.requiresInput)
+		actionDropdown.selectedIndex = 1;
+	
+	var text1 = document.createElement("p");
+	text1.style = "display: inline;";
+	text1.innerHTML = " the student when ";
+	div.appendChild(text1);
+	
+	// When to trigger prompt/question
+	var eventDropdown = document.createElement("select");
+	
+	var frequencyInput = document.createElement("input");
+	
+	var versionOption = document.createElement("option");
+	versionOption.value = "version";
+	versionOption.innerHTML = "a new version is created";
+	versionOption.onclick = function(){
+					prompt.eventType = "version";
+					frequencyInput.style.visibility = "hidden";
+					frequencyInput.style.width = "0px";
+				};
+	eventDropdown.appendChild(versionOption);
+	
+	var saveOption = document.createElement("option");
+	saveOption.value = "save";
+	saveOption.innerHTML = "a version is saved";
+	saveOption.onclick = function(){
+				prompt.eventType = "save";
+				frequencyInput.style.visibility = "hidden";
+				frequencyInput.style.width = "0px";
+			};
+	eventDropdown.appendChild(saveOption);
+	
+	var frequencyOption = document.createElement("option");
+	frequencyOption.value = "frequency";
+	frequencyOption.innerHTML = "the number of nodes is a multiple of";
+	frequencyOption.onclick = function(){
+					prompt.eventType = "frequency";
+					frequencyInput.style.visibility = "visible";
+					frequencyInput.style.width = "30px";
+				};
+	eventDropdown.appendChild(frequencyOption);
+	div.appendChild(eventDropdown);
+	
+	frequencyInput.style = "visibility: hidden; width: 0px;";
+	frequencyInput.oninput = function(){
+					prompt.frequency = parseInt(frequencyInput.value);
+				};
+	div.appendChild(frequencyInput);
+	
+	if(prompt.eventType == "save")
+		eventDropdown.selectedIndex = 1;
+	else if(prompt.eventType == "frequency")
+		eventDropdown.selectedIndex = 2;
+	
+	// Remaining text and cancel button
+	var text2 = document.createElement("p");
+	text2.style = "display: inline;";
+	text2.innerHTML = "with this text:";
+	div.appendChild(text2);
+	
+	var textarea = document.createElement("textarea");
+	textarea.style.verticalAlign = "top";
+	textarea.value = prompt.text;
+	textarea.oninput = function(){
+				prompt.text = textarea.value;
+			};
+	div.appendChild(textarea);
+	
+	var deleteButton = document.createElement("button");
+	deleteButton.value = "delete";
+	deleteButton.innerHTML = "delete";
+	deleteButton.style = "float: right;";
+	deleteButton.onclick = function(){
+					parent.removeChild(div);
+					promptArray.splice(promptArray.indexOf(prompt), 1);
+				};
+	div.appendChild(deleteButton);
+	
+	parent.appendChild(div);
+	parent.appendChild(last);
+}
+
+function displayDetail(courses){
+	clearDetailView();
+	showDetailView();
+	
+	setTitle("<h1>Courses</h1>");
+	var courseDiv = document.createElement("div");
+	getInfoBoxes("", courses, courseDiv, coursesToCourseOnClickMaker, function(){return "";});
+	
+	detail_view.appendChild(courseDiv);
+}
+
 function displayDetailCourse(course){
 	clearDetailView();
 	showDetailView();
 	
+	setTitle("<h1>" + course.title + "</h1>");
 	var projectDiv = document.createElement("div");
-	getInfoBoxes("Projects", course.projects, projectDiv);
+	getInfoBoxes("Projects", course.projects, projectDiv, courseToProjectOnClickMaker, function(){return "";}, function(){displayNewProject(course);});
 	var studentDiv = document.createElement("div");
-	getInfoBoxes("Students", course.students, studentDiv);
+	getInfoBoxes("Students", course.students, studentDiv, courseToStudentOnClickMaker, function(){return "";});
 	
 	detail_view.appendChild(projectDiv);
 	detail_view.appendChild(studentDiv);
@@ -253,25 +450,124 @@ function displayDetailProject(project){
 	clearDetailView();
 	showDetailView();
 	
+	setTitle("<h1>" + project.title + "</h1>");
+	
 	var studentDiv = document.createElement("div");
-	getInfoBoxes("Students", project.course.students, studentDiv);
+	getInfoBoxes("Students", project.course.students, studentDiv, getProjectToStudentOnClickMaker(project), function(){return "";});
+	
+	var promptDiv = document.createElement("div");
+	promptDiv.innerHTML = "<header class='header' id='detail_header'><h1 id='detail_title'>Prompts/Questions</h1></header>";
+	console.log(project.prompts);
+	for(var i=0; i<project.prompts.length; i++){
+		var current = project.prompts[i];
+		promptDiv.innerHTML += (current.requiresInput ? "Question " : "Prompt ") + "the student when " + (current.eventType == "version" ? "a vew version is created " : (current.eventType == "save" ? "a version is saved " : "the number of nodes is a multiple of " + current.frequency + " ")) + "with this text: " + current.text + "<br>";
+		
+	}
+	
+	
+	var editButton = document.createElement("button");
+	editButton.innerHTML = "Edit Lab";
+	editButton.style = "float: right;";
+	editButton.onclick = function(){displayNewProject(project.course, project, true);};
 	
 	detail_view.appendChild(studentDiv);
+	detail_view.appendChild(promptDiv);
+	detail_view.appendChild(editButton);
 }
 
 function displayDetailStudent(student){
 	clearDetailView();
 	showDetailView();
 	
+	setTitle("<h1>" + student.title + "</h1>");
 	var projectDiv = document.createElement("div");
-	getInfoBoxes("Projects", student.course.projects, projectDiv);
+	getInfoBoxes("Projects", student.course.projects, projectDiv, getStudentToProjectOnClickMaker(student), function(){return "";});
+	
+	detail_view.appendChild(projectDiv);
 }
+
+
 
 function displayDetailStudentProject(student, project){
+	clearDetailView();
+	showDetailView();
 	
+	setTitle("<h1>" + student.title + "'s " + project.title + "</h1>");
+	var graphDiv = document.createElement("div");
+	getInfoBoxes("Graphs", student.getGraphHistoryOf(project).graphs, graphDiv, studentProjectToGraphOnClickMaker, function(){return "";}, newGraphFunction);
+	currentProject = project;
+	currentStudent = student;
+	
+	detail_view.appendChild(graphDiv);
 }
 
-function getInfoBoxes(title, array, parent){
+function newGraphFunction(){
+	var currentGraphHistory = currentStudent.getGraphHistoryOf(currentProject);
+	var newGraph = currentGraphHistory.graphs[currentGraphHistory.graphs.length-1].clone();
+	currentGraphHistory[currentGraphHistory.graphs.length] = newGraph;
+	showGraph(newGraph);
+}
+
+function showGraph(graph){
+	showCanvas();
+	currentGraph.hide();
+	graph.show();
+	currentGraph = graph;
+};
+
+function setTitle(title){
+	center_header.innerHTML = title;
+}
+
+//------------ On Click Makers -----------------
+
+function coursesToCourseOnClickMaker(course){
+	return function(){
+		displayDetailCourse(course);	
+	};
+}
+
+function courseToProjectOnClickMaker(project){
+	return function(){
+		displayDetailProject(project);
+	};
+}
+
+function courseToStudentOnClickMaker(student){
+	return function(){
+		displayDetailStudent(student);
+	}
+}
+
+function getProjectToStudentOnClickMaker(project){
+	return function projectToStudentOnClickMaker(student){
+		return function(){
+			console.log(student.title + " " + project.title);
+			displayDetailStudentProject(student, project);
+		};
+	}
+}
+
+function getStudentToProjectOnClickMaker(student){
+	return function studentToProjectOnClickMaker(project){
+		return function(){
+			displayDetailStudentProject(student, project);
+		};
+	}
+}
+
+function studentProjectToGraphOnClickMaker(graph){
+	return function(){
+		showGraph(graph);
+	};
+}
+//-----------------------------------------------
+
+//--------------- Picture Getters ---------------
+
+//-----------------------------------------------
+
+function getInfoBoxes(title, array, parent, onClickMaker, getImagePath, newFunction){
 	parent.innerHTML = "<header class='header' id='detail_header'><h1 id='detail_title'>" + title + "</h1></header>";
 	
 	for(var i=0; i<array.length; i++){
@@ -279,22 +575,38 @@ function getInfoBoxes(title, array, parent){
 		var div = document.createElement("div");
 		div.id = current.title;
 		div.className = "info_block";
-		div.innerHTML = "<img class='info_content' width='50' height='50'> \
-				 <a class='info_content' href='#'>" + current.title + "</a>";
+		div.innerHTML = "<img class='info_content' width='50' height='50' src='" + getImagePath() + "'>";
+		var link = document.createElement("a");
+		link.className = "info_content";
+		link.onclick = onClickMaker(current);
+		link.innerHTML = current.title;
+		div.appendChild(link);
+		
 		parent.appendChild(div);
 	}
+	
+	if(newFunction){
+		var div = document.createElement("div");
+		div.className = "info_block";
+		div.innerHTML = "<img class='info_content' width='50' height='50' src=''>";
+		var link = document.createElement("a");
+		link.className = "info_content";
+		link.onclick = newFunction;
+		link.innerHTML = "New...";
+		div.appendChild(link);
+		parent.appendChild(div);
+	}
+	
 }
 
 function showDetailView(){
-	detail_view.style.visibility = "visible";
-	detail_view.style.height = "95%";
-	canvas.style.visibility = "hidden";
+	detail_view_container.className = "center_container";
+	canvas.className = "hidden";
 }
 
 function showCanvas(){
-	detail_view.style.visibility = "hidden";
-	detail_view.style.height = "0%";
-	canvas.style.visibility = "visible";
+	canvas.className = "center_container";
+	detail_view_container.className = "hidden";
 }
 
 function clearDetailView(){

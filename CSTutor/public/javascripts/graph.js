@@ -365,6 +365,7 @@ Node.prototype = {
 				centerY = selfRef.body.attr('cy');
 				if(!selfRef.subgraph){
 					selfRef.subgraph = new Graph();
+					selfRef.subgraph.title = selfRef.data + "'s subgraph";
 					selfRef.subgraph.topLevel = false;
 				}
 				currentGraph = selfRef.subgraph;
@@ -497,6 +498,7 @@ var Graph = function(){
 	this.title = "";
 	this.graphHistory = false;
 	this.topLevel = true;
+	//link to parent node
 };
 
 Graph.prototype = {
@@ -513,6 +515,7 @@ Graph.prototype = {
 	
 	//GUI Functions
 	show: function(){
+		center_header.innerHTML = "<h1>" + this.title + "</h1>";
 		for(i in this.nodes)
 			this.nodes[i].show();
 		for(i in this.edges)

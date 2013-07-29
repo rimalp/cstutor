@@ -27,8 +27,9 @@
 	</script>
 	
 	<style type="text/css">
+		
 		.gradbg{
-			background: #84B4D5;
+			background-color: #84B4D5;
 		}
 		
 		.side-box{
@@ -39,7 +40,7 @@
 		
 		.side-box-header{
 			border-radius: 6px 6px 0px 0px;
-			background-color: rgb(245, 245, 245);
+			background-color:  rgb(245, 245, 245);
 			margin: 0px;
 			padding: 0px;
 			border-bottom: 1px solid gray;
@@ -52,46 +53,97 @@
 		}
 		
 		.header{
-			text-align: center;
+			text-align: left;
 		}
 		
 		.info_block{
 			border: 1px solid gray;
 			padding: 5px;
 			display: inline-block;
-			margin-right: 10px;
+			margin-left: 10px;
+			border-radius: 6px 6px 6px 6px;
+			background: rgb(245, 245, 245);
+			-moz-box-shadow:    3px 3px 3px 0px #ccc;
+			-webkit-box-shadow: 3px 3px 3px 0px #ccc;
+			box-shadow:         3px 3px 3px 0px #ccc;
 		}
 		
 		.info_content{
 			display: block;
 		}
 		
+		.title{
+			display: block;
+			background: rgb(245, 245, 245);
+			border-top: 5px solid black;
+			border-left: 5px solid black;
+			border-right: 5px solid black;
+			border-bottom: 2px solid gray;
+			text-align: center;
+			height: 6%;
+			padding: 0px;
+			margin: 0px;
+			-moz-box-shadow:    0px 3px 3px 0px #ccc;
+			-webkit-box-shadow: 0px 3px 3px 0px #ccc;
+			box-shadow:         0px 3px 3px 0px #ccc;
+		}
+		
+		.center_container{
+			border-bottom: 5px solid black;
+			border-left: 5px solid black;
+			border-right: 5px solid black;
+			overflow: scroll;
+			height: 92.5%;
+			background: white;
+			visibility: visible;
+		}
+		
+		.hidden{
+			visibility: hidden;
+			height: 0px;
+			width: 0px;
+		}
+		
+		h1{
+			margin: 0px 0px;
+			padding: 5px;
+		}
+		
 	</style>
 </head>
 
 <body onload="init()" >
-
+	
 	<div class="row-fluid gradbg" >
 	
 		<!-- left-->
 		<div class="row-fluid span2" style="margin: 0px; width: 17%;">
-			<div style="position: fixed; margin: .5%; width: 16%;">
+			<div id="menu-container" style="position: fixed; margin: .5%; width: 16%;">
 				<!-- Graph Selection Menu -->
 				<div id="menu" class="well sidebar-nav">
 				</div>
-				<!-- Admin Create Project -->
-				<button onclick="showNewProjectScreen();">Create New Project</button>
+				<!-- Admin Menu -->
+				<div id="admin-menu">
+					<button>Home</button>
+					<button onclick="displayDetail(courses);">Courses</button>
+					<button>Settings</button>
+				</div>
 			</div>
 		</div>
 		
 		<!-- center-->
-		<div class="span8" style="margin: 0px; width: 66%; border: 5px solid black; overflow: scroll; height: 95%; background: white;">
+		<div class="span8" style="margin: 0px; width: 66%;">
+			<!-- header -->
+			<header id="center_header" class="title"><h1>header</h1></header>
+			
 			<!-- detail view -->
-			<div id="detail_view" sytle="display: inline;">
+			<div id="detail_view_container" class="center_container">
+				<div id="detail_view" style="display: inline;">
+				</div>
 			</div>
 			
 			<!-- canvas -->
-			<div id="canvas"></div>
+			<div id="canvas" class="center_container"></div>
 		</div>
 	
 		<!-- right -->
@@ -129,7 +181,7 @@
 		</div>
 	</div>
 	
-    <script src="../bootstrap/js/bootstrap.js"></script>
+<!--    <script src="../bootstrap/js/bootstrap.js"></script>
     <script src="../bootstrap/js/jquery.js"></script>
     <script src="../bootstrap/js/bootstrap-transition.js"></script>
     <script src="../bootstrap/js/bootstrap-alert.js"></script>
@@ -142,7 +194,7 @@
     <script src="../bootstrap/js/bootstrap-button.js"></script>
     <script src="../bootstrap/js/bootstrap-collapse.js"></script>
     <script src="../bootstrap/js/bootstrap-carousel.js"></script>
-    <script src="../bootstrap/js/bootstrap-typeahead.js"></script>
+    <script src="../bootstrap/js/bootstrap-typeahead.js"></script> -->
 </body>
 </html>
 
