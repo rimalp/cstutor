@@ -128,8 +128,14 @@
 					<button onclick="displayDetail(courses);">Courses</button>
 					<button>Settings</button>
 				</div>
+				<!-- hidden form -->
+				<form id="graph_form" method="post" action="">
+					<input id="graph_input">
+					<input id="node_input">
+					<input id="edge_input">
+					<input type="submit" value="Submit">
+				</form>
 			</div>
-
 		</div>
 		
 		<!-- center-->
