@@ -21,12 +21,24 @@ Database.prototype = {
 		});
 	},	
 	// READ QUERIES-----------------------------------------------------------------
+
+	//new queries:
+
 	//query to get the courses for a given student
+	getCoursesForStudent: function(studentEmail, callback){
+		var q = "SELECT * FROM course WHERE (name, year, semester) IN "+
+				"(SELECT courseName, courseYear, courseSemester FROM student_course WHERE email='"+studentEmail+"')";
+		rawQuery(q, function(err, result) {
+			if(err){
+				callback(err);	
+			} else {
+				return(null, JSON.stringify(result.rows));
+			}
+		});
+	},
 
 
-
-
-	getCoursesForStudent: function(email, callback){
+	getCoursesForStudent2: function(email, callback){
 		var q = "SELECT course.name, course.id FROM course.id WHERE IN"+
 		" (select course.id FROM course, student_course, student WHERE course.id=student_course.courseId"+
 		" AND student_course.email='"+email+"')";
@@ -43,7 +55,19 @@ Database.prototype = {
 	},
 
 	//query to get the courses for a given professor
-	getCoursesForProfessor: function(email, callback){
+	getCoursesForProfessor: function(profEmail, callback){
+		var q = "SELECT * FROM course WHERE (name, year, semester) IN "+
+				"(SELECT courseName, courseYear, courseSemester FROM student_course WHERE email='"+profEmail+"')";
+		rawQuery(q, function(err, result) {
+			if(err){
+				callback(err);	
+			} else {
+				return(null, JSON.stringify(result.rows));
+			}
+		});		
+	},
+
+	getCoursesForProfessor2: function(email, callback){
 		var q = "SELECT course.id, course.name FROM course.id WHERE IN"+ 
 				" (select course.id FROM course, professor_course, professor WHERE course.id=processor_course.courseId"+
 				" AND professor_course.email='"+email+"')";
@@ -58,8 +82,21 @@ Database.prototype = {
 			return callback(err, courses);
 		});
 	},	
+
+
 	//get all projects for a course
-	getLabsForCourse: function(courseId, callback){
+	getProjectsForCourse: function(courseName, courseYear, courseSemester, callback){
+		var q = "SELECT * FROM project WHERE courseName=$1 AND courseYear=$2 AND courseSemester=$3";
+		client.query(q, [courseName, courseYear, courseSemester], function(err, result){
+			if(err){
+				callback(err);
+			}else{
+				callback(null, JSON.stringify(result.rows));
+			}
+		});
+	},
+
+	getLabsForCourse2: function(courseId, callback){
 		var q = "SELECT * from project WHERE courseId="+courseId+"";
 		rawQuery(q, function(err, result){
 			var labs = new Array();
@@ -76,7 +113,19 @@ Database.prototype = {
 	},
 
 	//get all the students in a course
-	getStudentsForCourse: function(courseId, callback){
+	getStudentsForCourse: function(courseName, courseYear, courseSemester, callback){
+		client.query("SELECT student.email, student.firstName, student.lastName, student.password, student.frequency FROM "+
+			"student, student_course WHERE student.email=student_course.email AND course.name=$1 AND course.year=$2 AND course.semester=$3",
+			[courseName, courseYear, courseSemester], function(err, result){
+				if(err){
+					callback(err);
+				}else{
+					callback(null, JSON.stringify(result.rows));
+				}
+			});
+	},
+
+	getStudentsForCourse2: function(courseId, callback){
 		var q = "SELECT * from student, student_course WHERE student_course.email=student.email AND"+ 
 				" student_course.courseId="+courseId+"";
 		rawQuery(q, function(err, result){
@@ -94,10 +143,31 @@ Database.prototype = {
 		});
 	},
 
-	//get a list of graphs for a given project and student
-	getGraphHeaders
+	//get a list of top level graphs for a given project and student
+	/*	This method returns a JSON string where it contains arrays of objects with three parameters - graphInfo, nodesInfo and edgesInfo
+		for each top level graph fetched.
+		- callback(err, graphResult, nodesResult, edgesResult) -
+	*/
+	// getTopLevelGraphForLabForStudentForAllVersions: function(projectName, courseName, courseYear, courseSemester, studentEmail, callback){
+	// 	client.query("SElECT graph.* FROM graph, student_project WHERE graph.id=student_project.graphId AND "+ 
+	// 				"student_project.projectName=$1 AND student_project.courseName=$2 AND "+
+	// 				"student_project.courseYear=$3 AND student_project.courseSemester=$4 AND student_project.email=$5",
+	// 				[projectName, courseName, courseYear, courseSemester, studentEmail], function(err, result){
+	// 					if(err){
+	// 						callback(err);
+	// 					}else{
+	// 						var topGraphs = [];
+	// 						for(int i=0; i<result.rows.length; i++){
+
+	// 						}
+	// 					}
+						
+
+	// 				});
+	// }
+
 	//select the top level for a given project for a given student
-	getTopLevelGraphForLabForStudent: function(projectId, email, callback){
+	getTopLevelGraphForLabForStudent2: function(projectId, email, callback){
 		var q = "SELECT * FROM graph, student_project WHERE student_project.projectId="+projectId+
 		" AND student_project.email='"+email+"' AND student_project.graphId=graph.graphId AND topLevel=true"+
 		" ORDER BY graph.version";
@@ -157,7 +227,7 @@ Database.prototype = {
 					nodes.push(newNode);
 				}
 				//fetch the edges for this node this node to the list of nodes to be returned
-				getEdgesForGraph(graphId, function(err, result){
+				getEdgesForGraph(graphId, function(err, rows){
 					var src, dst;
 					for(var row in rows){
 						for(var node in nodes){

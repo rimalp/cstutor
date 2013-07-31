@@ -49,6 +49,7 @@ var Node = function(d, description){
 };
 
 Node.prototype = {
+
 	addChild: function(node){
 		this.children[this.children.length] = node;
 		this.addConnection(node);
@@ -308,4 +309,5 @@ Graph.prototype = {
 			this.connections[i].draw();
 		}
 	}
+
 };
