@@ -6,6 +6,7 @@
 	<script type="text/javascript" src="../public/javascripts/graph.js"></script>
 	<script type="text/javascript" src="../public/javascripts/menu.js"></script>
 	<script type="text/javascript" src="../public/javascripts/newproject.js"></script>
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 	<link href="../bootstrap/css/bootstrap.css" rel="stylesheet">
 	<link href="../bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
 
@@ -24,6 +25,16 @@
 		var setInfo = function(name, description){
 			document.getElementById("info").innerHTML = "Title: " + name + "<br>Description: " + description;
 		}
+
+
+		$(document).ready(function(){	
+  			$("submitId").click(function(){
+  			console.log("clicked!");
+    		$.get("/login",function(data,status){
+      			alert("Data: " + data + "\nStatus: " + status);
+    		});
+  			});
+		});
 	</script>
 	
 	<style type="text/css">
@@ -129,13 +140,14 @@
 					<button>Settings</button>
 				</div>
 				<!-- hidden form -->
-				<form id="graph_form" method="post" action="">
+				<form id="graph_form"> <!-- method="POST" action="/login"> -->
 					<input id="graph_input">
 					<input id="node_input">
 					<input id="edge_input">
-					<input type="submit" value="Submit" onmousedown="sendGraph(currentGraph)">
-				</form>
-			</div>
+					<input value="submitId" type="submit" id="submitId"> <!-- onmousedown="sendGraph(currentGraph)"> -->
+				 </form> 
+<!-- 				<button id="buttonId" type="button">Click Me!</button>
+ -->			</div>
 		</div>
 		
 		<!-- center-->
