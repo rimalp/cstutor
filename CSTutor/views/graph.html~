@@ -155,8 +155,8 @@
 		<div class="row-fluid span2" style="margin: 0px; width: 17%;">
 			<div id="menu-container" style="position: fixed; margin: .5%; width: 16%;">
 				<!-- Graph Selection Menu -->
-				<div id="menu" class="well sidebar-nav">
-				</div>
+				<!-- <div id="menu" class="well sidebar-nav">
+				</div> -->
 				<!-- Admin Menu -->
 				<div id="admin-menu">
 					<button class="navigate_button top_navigate_button">Home</button><br>
