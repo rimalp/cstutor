@@ -45,15 +45,37 @@ if ('development' == app.get('env')) {
 }
 
 
-app.get('/', routes.index); //login page
-app.get('/users/:email', user.list); //user home page
-// app.get('/login', function(req, res){
-// 	res.send("<h1> Login Page </h1>");
-// });
-app.get('/home/:userId', function(req, res){
+app.get('/', routes.index); //home page
+
+//==============  GET requests for database queries
+//===============
+//get all the courses for a student. request body params:  studentEmail
+app.post('/courses_student', function(req, res){
 
 });
-//process the login request
+//get all the courses for a student. request body params:  studentEmail
+app.post('/courses_professor', function(req, res){
+
+});
+//get projects for a course. request body params: courseName, courseYear, courseSemester
+app.post('/projects', function(req, res){
+
+});
+//get all the students request body params - courseName, courseYear, courseSemester
+app.post('/students', function(req, res){
+
+});
+//get top level graphs for a course>lab>student. 
+//request body params: projectName, courseName, courseYear, courseSemester, studentEmail
+app.post('/graphs_top', function(req, res){
+
+});
+//get sub-level graphs. request body params: nodeId (graph's parentNodeId if zooming out and simply nodeId if zooming in)
+app.post('/graph', function(req, res){
+
+});
+
+//for testing purposes
 app.post('/login', function(req, res){
 	var name = req.body.name;
 	console.log("Name received:" + name);
@@ -116,9 +138,8 @@ http.createServer(app).listen(app.get('port'), function(){
 
 /*
 //Database connection
-var conString = "postgres://ww2.cs.lafayette.edu:rimalp@ww2.cs.lafayette.edu:5432/rimalp";
-var client = new pg.Client(conString);
-// var client = new pg.Client({user: 'rimalp', password: 'rimalp', database: 'gfb', host: 'ww2.cs.lafayette.edu', port: 5432 });
+// var client = new pg.Client(conString);
+var client = new pg.Client({user: 'prabhat', password: 'naing', database: 'tutor', host: 'localhost', port: 5432 });
 client.connect(function(err) {
   	if(err) {
    		return console.error('could not connect to postgres: ', err);
@@ -130,10 +151,10 @@ client.connect(function(err) {
 	var create_ProfCourse = "CREATE TABLE IF NOT EXISTS professor_course(email varchar, courseId integer, PRIMARY KEY(email, courseId))";
 	var create_StudentCourse = "CREATE TABLE IF NOT EXISTS student_course(email varchar, courseName varchar, courseYear integer, courseSemester varchar, PRIMARY KEY(email, courseName, courseYear, semester))";
 	var create_Project = "CREATE TABLE IF NOT EXISTS project(name text, description text, dueDate DATE, courseName varchar, courseYear integer, courseSemester varchar, PRIMARY KEY(courseName, courseYear, courseSemester, name))";
-	var create_StudentProject = "CREATE TABLE IF NOT EXISTS student_project(projectName, courseName, courseYear, courseSemester, email varchar, graphId integer, PRIMARY KEY(projectName, courseName, courseYear, courseSemester, email, graphId))";
+	var create_StudentProject = "CREATE TABLE IF NOT EXISTS student_project(projectName text, courseName varchar, courseYear integer, courseSemester varchar, email varchar, graphId integer, PRIMARY KEY(projectName, courseName, courseYear, courseSemester, email, graphId))";
 	var create_Node = "CREATE TABLE IF NOT EXISTS node(id SERIAL, x integer, y integer, graphId integer, parentNodeId integer, name integer, description integer, color varchar)";
-	var create_Edge = "CREATE TABLE IF NOT EXISTS edge (src integer, dst integer, PRIMARY KEY(src, dst))";
-	var create_Graph = "CREATE TABLE IF NOT EXISTS graph(id SERIAL, parentNodeId integer, version integer, topLevel boolean, description text)";
+	var create_Edge = "CREATE TABLE IF NOT EXISTS edge (src integer, dst integer, graphId integer, PRIMARY KEY(src, dst))";
+	var create_Graph = "CREATE TABLE IF NOT EXISTS graph(id SERIAL, parentNodeId integer UNIQUE, version integer, description text)";
 
 	var create_Question = "CREATE TABLE IF NOT EXISTS question(id SERIAL, projectId integer, question varchar)";
 	var create_Answer = "CREATE TABLE IF NOT EXISTS answer(id SERIAL, questionId integer, graphId integer, answer varchar)";
