@@ -526,7 +526,6 @@ Graph.prototype = {
 	
 	//GUI Functions
 	show: function(){
-		center_header.innerHTML = "<h1>" + this.title + "</h1>";
 		for(i in this.nodes)
 			this.nodes[i].show();
 		for(i in this.edges)
@@ -603,6 +602,10 @@ function sendGraph(graph){
 		//edgeInput.value += JSON.stringify(graph.edges[i].getJSON());
 	}
 	edgeInput.value = JSON.stringify(edgeArray);
+	
+	/*$.post('/graph', {graph: graph, function(data, status) {
+			  alert("Data: " + data + "\nStatus: " + status);
+			});*/
 };
 
 

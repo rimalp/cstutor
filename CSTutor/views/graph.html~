@@ -6,6 +6,7 @@
 	<script type="text/javascript" src="../public/javascripts/graph.js"></script>
 	<script type="text/javascript" src="../public/javascripts/menu.js"></script>
 	<script type="text/javascript" src="../public/javascripts/newproject.js"></script>
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 	<link href="../bootstrap/css/bootstrap.css" rel="stylesheet">
 	<link href="../bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
 
@@ -21,9 +22,26 @@
 	<link rel="shortcut icon" href="../assets/ico/favicon.png"> -->
 	
 	<script type="text/javascript">
+
 		var setInfo = function(name, description){
 			document.getElementById("info").innerHTML = "Title: " + name + "<br>Description: " + description;
 		}
+	</script>
+
+
+	<script>
+		$(document).ready(function(){	
+
+  			$("#buttonId").click(function(){
+  			console.log("clicked!");
+  			$.post('/login', { name: "John", time: "2pm" }, function(data, status) {
+			  alert("Data: " + data + "\nStatus: " + status);
+			});	
+    		// $.get("/login",function(data,status){
+      // 			alert("Data: " + data + "\nStatus: " + status);
+    		// });
+  			});
+		});
 	</script>
 	
 	<style type="text/css">
@@ -109,6 +127,23 @@
 			padding: 5px;
 		}
 		
+		.navigate_button{
+			background: rgb(245, 245, 245);
+			border: 1px solid gray;
+			width: 100%;
+			height: 70px;
+			font-size: 18px;
+			color: rgb(0, 136, 204);
+		}
+		
+		.top_navigate_button{
+			border-radius: 6px 6px 0px 0px;
+		}
+		
+		.bottom_navigate_button{
+			border-radius: 0px 0px 6px 6px;
+		}
+		
 	</style>
 </head>
 
@@ -124,17 +159,10 @@
 				</div>
 				<!-- Admin Menu -->
 				<div id="admin-menu">
-					<button>Home</button>
-					<button onclick="displayDetail(courses);">Courses</button>
-					<button>Settings</button>
+					<button class="navigate_button top_navigate_button">Home</button><br>
+					<button class="navigate_button" onclick="displayDetail(courses);">Courses</button><br>
+					<button class="navigate_button bottom_navigate_button">Settings</button>
 				</div>
-				<!-- hidden form -->
-				<form id="graph_form" method="post" action="">
-					<input id="graph_input">
-					<input id="node_input">
-					<input id="edge_input">
-					<input type="submit" value="Submit">
-				</form>
 			</div>
 		</div>
 		
