@@ -127,6 +127,23 @@
 			padding: 5px;
 		}
 		
+		.navigate_button{
+			background: rgb(245, 245, 245);
+			border: 1px solid gray;
+			width: 100%;
+			height: 70px;
+			font-size: 18px;
+			color: rgb(0, 136, 204);
+		}
+		
+		.top_navigate_button{
+			border-radius: 6px 6px 0px 0px;
+		}
+		
+		.bottom_navigate_button{
+			border-radius: 0px 0px 6px 6px;
+		}
+		
 	</style>
 </head>
 
@@ -138,22 +155,14 @@
 		<div class="row-fluid span2" style="margin: 0px; width: 17%;">
 			<div id="menu-container" style="position: fixed; margin: .5%; width: 16%;">
 				<!-- Graph Selection Menu -->
-				<div id="menu" class="well sidebar-nav">
-				</div>
+				<!-- <div id="menu" class="well sidebar-nav">
+				</div> -->
 				<!-- Admin Menu -->
 				<div id="admin-menu">
-					<button>Home</button>
-					<button onclick="displayDetail(courses);">Courses</button>
-					<button>Settings</button>
+					<button class="navigate_button top_navigate_button">Home</button><br>
+					<button class="navigate_button" onclick="displayDetail(courses);">Courses</button><br>
+					<button class="navigate_button bottom_navigate_button">Settings</button>
 				</div>
-				<!-- hidden form -->
-				<form id="graph_form"> <!-- method="POST" action="/login"> -->
-					<input id="graph_input">
-					<input id="node_input">
-					<input id="edge_input">
-					<input value="submitId" type="submit" onmousedown="sendGraph(currentGraph)">
-				 </form> 
-				<button id="buttonId" type="button">Click Me!</button>
 			</div>
 		</div>
 		
