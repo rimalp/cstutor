@@ -48,31 +48,53 @@ if ('development' == app.get('env')) {
 app.get('/', routes.index); //home page
 
 //==============  GET requests for database queries
-//===============
+var sendPostResponse = function(req, res, err, result){
+	if(err){
+			res.writeHead(500, { 'Content-Type': 'text/plain' });
+			res.end("Error reading the database");
+		}else{
+			res.writeHead(200, { 'Content-Type': 'text/plain' });
+			res.end(JSON.stringify(test));
+		}
+}
 //get all the courses for a student. request body params:  studentEmail
 app.post('/courses_student', function(req, res){
-
+	database.getCoursesForStudent(req.body.studentEmail, function(err, result){
+		sendPostResponse(req, res, err, result);
+	});
 });
-//get all the courses for a student. request body params:  studentEmail
+//get all the courses for a student. request body params:  professorEmail
 app.post('/courses_professor', function(req, res){
-
+	database.getCoursesForProfessor(req.body.studentEmail, function(err, result){
+		sendPostResponse(req, res, err, result);
+	});
 });
 //get projects for a course. request body params: courseName, courseYear, courseSemester
 app.post('/projects', function(req, res){
-
+	database.getProjectsForCourse(req.body.courseName, req.body.courseYear, req.body.courseSemester, function(err, result){
+		sendPostResponse(req, res, err, result);
+	});
 });
 //get all the students request body params - courseName, courseYear, courseSemester
 app.post('/students', function(req, res){
-
+	database.getStudentsForCourse(req.body.courseName, req.body.courseYear, req.body.courseSemester, function(err, result){
+		sendPostResponse(req, res, err, result);
+	});
 });
 //get top level graphs for a course>lab>student. 
 //request body params: projectName, courseName, courseYear, courseSemester, studentEmail
 app.post('/graphs_top', function(req, res){
-
+	database.getTopLevelGraphForLabForStudentForAllVersions(req.body.projectName, req.body.courseName, req.body.courseYear,
+		req.body.courseSemester, req.body.studentEmail, function(err, result){
+			sendPostResponse(req, res, err, result);
+		});
 });
 //get sub-level graphs. request body params: nodeId (graph's parentNodeId if zooming out and simply nodeId if zooming in)
 app.post('/graph', function(req, res){
-
+	database.getSubGraphForNode(req.body.parentNodeId, function(err, result){
+		sendPostResponse(req, res, err, result);
+	});
+		sendPostResponse(req, res, err, result);
 });
 
 //for testing purposes
