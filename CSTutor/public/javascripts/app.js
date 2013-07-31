@@ -4,17 +4,16 @@
  */
 
 var express = require('express')
-  , routes = require('/routes')
-  , user = require('/routes/user')
+  , routes = require('./routes')
+  , user = require('./routes/user')
   , http = require('http')
   , path = require('path')
-  , pg = require('pg')
-  , db = require('/javascripts/database')
-  , index = require('/routes/index');
+/*  , pg = require('pg')
+  , db = require('./database')*/
+  , index = require('./routes/index');
 
   var app = express();
 
-  var database;
 
 app.configure(function(){
 	// all environments
@@ -33,7 +32,7 @@ app.configure(function(){
 	app.use(express.bodyParser());
 	app.use(express.methodOverride());
 	app.use(app.router);
-	app.use(require('less-middleware')({ src: __dirname + '/public' }));
+	app.use(require('less-middleware')({ src: __dirname }));
 	app.use(app.router); //calls the routes before the one below is called. ex: track what files are downloaded how often
 	app.use(express.static(path.join(__dirname))); //specifies the resource folder
 });
@@ -46,18 +45,21 @@ if ('development' == app.get('env')) {
 }
 
 
-app.get('/', routes.index); //call index.js file in routes direcotory
-app.get('/users', user.list);
-app.get('/login', function(req, res){
-	res.send("<h1> Login Page </h1>");
-});
+app.get('/', routes.index); //login page
+app.get('/users/:email', user.list); //user home page
+// app.get('/login', function(req, res){
+// 	res.send("<h1> Login Page </h1>");
+// });
 app.get('/home/:userId', function(req, res){
 
 });
 //process the login request
-app.post('/login', function(req, res){
+app.get('/login', function(req, res){
 	//received form data, see below on how to get that data 
-	console.log(req.body);
+	var test = {param: "This is from the server."};
+	console.log("Request received.");
+	res.writeHead(200, { 'Content-Type': 'text/plain' });
+	res.end(JSON.stringify(test));
 });
 
 
@@ -110,10 +112,11 @@ http.createServer(app).listen(app.get('port'), function(){
 });
 
 
-
+/*
 //Database connection
-var conString = "postgres://prabhat:naing@localhost:5432/tutor";
+var conString = "postgres://ww2.cs.lafayette.edu:rimalp@ww2.cs.lafayette.edu:5432/rimalp";
 var client = new pg.Client(conString);
+// var client = new pg.Client({user: 'rimalp', password: 'rimalp', database: 'gfb', host: 'ww2.cs.lafayette.edu', port: 5432 });
 client.connect(function(err) {
   	if(err) {
    		return console.error('could not connect to postgres: ', err);
@@ -121,14 +124,17 @@ client.connect(function(err) {
   	//create all the tables here if not exist
 	var create_Student = "CREATE TABLE IF NOT EXISTS student(email varchar PRIMARY KEY, firstName varchar, lastName varchar, password varchar, int frequency)";
 	var create_Prof = "CREATE TABLE IF NOT EXISTS professor(email varchar PRIMARY KEY, firstName varchar, lastName varchar, password varchar)";
-	var create_Course = "CREATE TABLE IF NOT EXISTS course(id SERIAL, name varchar)";
+	var create_Course = "CREATE TABLE IF NOT EXISTS course(name varchar, year integer, semester varchar, PRIMARY KEY(name, year, semester))";
 	var create_ProfCourse = "CREATE TABLE IF NOT EXISTS professor_course(email varchar, courseId integer, PRIMARY KEY(email, courseId))";
-	var create_StudentCourse = "CREATE TABLE IF NOT EXISTS student_course(email varchar, courseId integer, PRIMARY KEY(email, courseId))";
-	var create_Project = "CREATE TABLE IF NOT EXISTS project(id SERIAL, description text, dueDate DATE, courseId integer)";
-	var create_StudentProject = "CREATE TABLE IF NOT EXISTS student_project(projectId integer, email varchar, graphId integer, PRIMARY KEY(projectId, email, graphId))";
-	var create_Node = "CREATE TABLE IF NOT EXISTS node(id SERIAL, x integer, y integer, graphId integer, parentNodeId integer, subGraphId integer, name integer, description integer)";
-	var create_Edge = "CREATE TABLE IF NOT EXISTS edge(graphId integer, src integer, dst integer, PRIMARY KEY(graphId, src, dst))";
-	var create_Graph = "CREATE TABLE IF NOT EXISTS graph(id SERIAL, version integer, topLevel boolean, description text)";
+	var create_StudentCourse = "CREATE TABLE IF NOT EXISTS student_course(email varchar, courseName varchar, courseYear integer, courseSemester varchar, PRIMARY KEY(email, courseName, courseYear, semester))";
+	var create_Project = "CREATE TABLE IF NOT EXISTS project(name text, description text, dueDate DATE, courseName varchar, courseYear integer, courseSemester varchar, PRIMARY KEY(courseName, courseYear, courseSemester, name))";
+	var create_StudentProject = "CREATE TABLE IF NOT EXISTS student_project(projectName, courseName, courseYear, courseSemester, email varchar, graphId integer, PRIMARY KEY(projectName, courseName, courseYear, courseSemester, email, graphId))";
+	var create_Node = "CREATE TABLE IF NOT EXISTS node(id SERIAL, x integer, y integer, graphId integer, parentNodeId integer, name integer, description integer, color varchar)";
+	var create_Edge = "CREATE TABLE IF NOT EXISTS edge (src integer, dst integer, PRIMARY KEY(src, dst))";
+	var create_Graph = "CREATE TABLE IF NOT EXISTS graph(id SERIAL, parentNodeId integer, version integer, topLevel boolean, description text)";
+
+	var create_Question = "CREATE TABLE IF NOT EXISTS question(id SERIAL, projectId integer, question varchar)";
+	var create_Answer = "CREATE TABLE IF NOT EXISTS answer(id SERIAL, questionId integer, graphId integer, answer varchar)";
 
   client.query('SELECT NOW() AS "theTime"', function(err, result) {
     if(err) {
@@ -197,7 +203,11 @@ client.connect(function(err) {
     });
 });
 
-database = db.Database(client);
+exports.database = db.Database(client);
+*/
+
+console.log("database object created");
+
 
 
 

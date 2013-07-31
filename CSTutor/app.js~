@@ -8,8 +8,8 @@ var express = require('express')
   , user = require('./routes/user')
   , http = require('http')
   , path = require('path')
-/*  , pg = require('pg')
-  , db = require('./database')*/
+  , pg = require('pg')
+  , db = require('./database')
   , index = require('./routes/index');
 
   var app = express();
