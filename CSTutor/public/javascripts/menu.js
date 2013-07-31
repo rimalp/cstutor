@@ -313,7 +313,7 @@ function displayNewProject(course, project, backTo){
 	clearDetailView();
 	showDetailView();
 	
-	setTitle("<h1>New Project for " + course.title + "</h1>");
+	setTitle("New Project for " + course.title);
 	
 	//Prompts
 	var promptArray = (!project)? new Array() : project.prompts;
@@ -470,11 +470,14 @@ function addNewPrompt(promptArray, index, parent){
 	parent.appendChild(last);
 }
 
+var backButtonStack = new Array();
+
 function displayDetail(courses){
 	clearDetailView();
 	showDetailView();
 	
-	setTitle("<h1>Courses</h1>");
+	setTitle("Courses");
+	backButtonStack.push(getButtonDiv("Courses", function(){displayDetail(courses); backButtonStack.pop();}));
 	var courseDiv = document.createElement("div");
 	getInfoBoxes("", courses, courseDiv, coursesToCourseOnClickMaker, function(){return "";});
 	
@@ -485,7 +488,10 @@ function displayDetailCourse(course){
 	clearDetailView();
 	showDetailView();
 	
-	setTitle("<h1>" + course.title + "</h1>");
+	setTitle(course.title, backButtonStack[backButtonStack.length-1]);
+	if(!back)//put this in a function and do it after a child page is clicked
+		backButtonStack.push(getButtonDiv(course.title, function(){displayDetailCourse(course); backButtonStack.pop();}));
+	
 	var projectDiv = document.createElement("div");
 	getInfoBoxes("Projects", course.projects, projectDiv, courseToProjectOnClickMaker, function(){return "";}, function(){displayNewProject(course);});
 	var studentDiv = document.createElement("div");
@@ -495,11 +501,13 @@ function displayDetailCourse(course){
 	detail_view.appendChild(studentDiv);
 }
 
-function displayDetailProject(project){
+function displayDetailProject(project, back){
 	clearDetailView();
 	showDetailView();
 	
-	setTitle("<h1>" + project.title + "</h1>");
+	setTitle(project.title, backButtonStack[backButtonStack.length-1]);
+	if(!back)
+		backButtonStack.push(getButtonDiv(project.title, function(){displayDetailProject(project, true); backButtonStack.pop();}));
 	
 	var studentDiv = document.createElement("div");
 	getInfoBoxes("Students", project.course.students, studentDiv, getProjectToStudentOnClickMaker(project), function(){return "";});
@@ -524,30 +532,52 @@ function displayDetailProject(project){
 	detail_view.appendChild(editButton);
 }
 
-function displayDetailStudent(student){
+function displayDetailStudent(student, back){
 	clearDetailView();
 	showDetailView();
 	
-	setTitle("<h1>" + student.title + "</h1>");
+	setTitle(student.title, backButtonStack[backButtonStack.length-1]);
+	if(!back)
+		backButtonStack.push(getButtonDiv(student.title, function(){displayDetailStudent(student, true); backButtonStack.pop();}));
+	
 	var projectDiv = document.createElement("div");
 	getInfoBoxes("Projects", student.course.projects, projectDiv, getStudentToProjectOnClickMaker(student), function(){return "";});
 	
 	detail_view.appendChild(projectDiv);
 }
 
-
-
-function displayDetailStudentProject(student, project){
+function displayDetailStudentProject(student, project, back){
 	clearDetailView();
 	showDetailView();
 	
-	setTitle("<h1>" + student.title + "'s " + project.title + "</h1>");
+	setTitle(student.title + "'s " + project.title, backButtonStack[backButtonStack.length-1]);
+	if(!back)
+		backButtonStack.push(getButtonDiv(student.title + "'s " + project.title, function(){displayDetailStudentProject(student, project, true); backButtonStack.pop();}));
+	
 	var graphDiv = document.createElement("div");
 	getInfoBoxes("Graphs", student.getGraphHistoryOf(project).graphs, graphDiv, studentProjectToGraphOnClickMaker, function(){return "";}, newGraphFunction);
 	currentProject = project;
 	currentStudent = student;
 	
+	var promptDiv = document.createElement("div");
+	promptDiv.innerHTML = "<header class='header' id='detail_header'><h1 id='detail_title'>Prompts/Questions</h1></header>";
+	var graphHistory = student.getGraphHistoryOf(project);
+	for(var i=0; i<graphHistory.responses.length; i++){
+		var response = graphHistory.responses[i];
+		var prompt = response.prompt;
+		var text = document.createElement("p");
+		if(prompt.requiresInput){
+			text.innerHTML += "<br>Asked " + student.title + ": \"" + prompt.text + "\" when " + ((prompt.eventType == "version") ? "a new version was created " : ((prompt.eventType == "frequency") ? "the number of nodes was a multiple of " : "a version was saved ")) + ". ";
+			text.innerHTML += student.title + " answered:\"" + response.text + "\"";
+		}
+		else{
+			text.innerHTML += "<br>Prompted " + student.title + " when " + ((prompt.eventType == "version") ? "a new version was created " : ((prompt.eventType == "frequency") ? "the number of nodes was a multiple of " : "a version was saved ")) + "with: \"" + prompt.text + "\"";
+		}
+		promptDiv.appendChild(text);
+	}
+	
 	detail_view.appendChild(graphDiv);
+	detail_view.appendChild(promptDiv);
 }
 
 function newGraphFunction(){
@@ -563,11 +593,36 @@ function showGraph(graph){
 	currentGraph.hide();
 	graph.show();
 	currentGraph = graph;
-	setTitle("<h1>" + graph.title + "</h1>");
+	setTitle(graph.title);
 };
 
-function setTitle(title){
-	center_header.innerHTML = title;
+function setTitle(title, leftDiv, rightDiv){
+	var h1 = document.createElement("h1");
+	
+	leftDiv = leftDiv || document.createElement("div");
+	leftDiv.style = "float: left";
+	h1.appendChild(leftDiv);
+	
+	rightDiv = rightDiv || document.createElement("div");
+	rightDiv.style = "float: right";
+	h1.appendChild(rightDiv);
+	
+	var titleText = document.createElement("div");
+	titleText.style = "margin: 0 auto;";
+	titleText.innerHTML = title;
+	h1.appendChild(titleText);
+	
+	center_header.innerHTML = "";
+	center_header.appendChild(h1);
+}
+
+function getButtonDiv(title, onclick){
+	var div = document.createElement("div");
+	var button = document.createElement("button");
+	button.innerHTML = title;
+	button.onclick = onclick;
+	div.appendChild(button);
+	return div;
 }
 
 //------------ On Click Makers -----------------
