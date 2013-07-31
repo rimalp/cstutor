@@ -54,7 +54,9 @@ app.get('/home/:userId', function(req, res){
 
 });
 //process the login request
-app.get('/login', function(req, res){
+app.post('/login', function(req, res){
+	var name = req.body.name;
+	console.log("Name received:" + name);
 	//received form data, see below on how to get that data 
 	var test = {param: "This is from the server."};
 	console.log("Request received.");
@@ -207,7 +209,3 @@ exports.database = db.Database(client);
 */
 
 console.log("database object created");
-
-
-
-
