@@ -36,7 +36,7 @@ Course.prototype.addStudent = function(student){
 	this.students[this.students.length] = student;
 };
 Course.prototype.getJSON = function(){
-	return {name: this.title, year: this.year, semester: this.semester};
+	return {courseName: this.title, courseYear: this.year, couresSemester: this.semester};
 };
 Course.prototype.constructor = Course;
 
