@@ -8,8 +8,8 @@ var express = require('express')
   , user = require('./routes/user')
   , http = require('http')
   , path = require('path')
-/*  , pg = require('pg')
-  , db = require('./database')*/
+  , pg = require('pg')
+  , db = require('./database')
   , index = require('./routes/index');
 
   var app = express();
@@ -47,7 +47,7 @@ if ('development' == app.get('env')) {
 
 app.get('/', routes.index); //home page
 
-//==============  GET requests for database queries
+//==============  GET requests for database queries ===============================
 var sendPostResponse = function(req, res, err, result){
 	if(err){
 			res.writeHead(500, { 'Content-Type': 'text/plain' });
@@ -109,6 +109,44 @@ app.post('/login', function(req, res){
 });
 
 
+//===================================== PUT requests (Create or update of information) ================================
+
+//params: professor{email, lastName, firstName, password}
+app.put('/create_professor', function(req, res){
+
+});
+//params: student{email, lastName, firstName, password}
+app.put('/create_student', function(req, res){
+
+});
+
+//params: {course{name, year, semester}, professorEmail}
+app.put('/create_course', function(req, res){
+
+});
+
+//params: {course{name, year, semester}, studentEmail}
+app.put('/add_students', function(req, res){
+
+});
+
+//params: project{name, description, courseName, courseYear, description}
+app.put('/create_project', function(req, res){
+
+});
+
+//params: graph { graphInfo{...}, nodeInfo{...}, edgeInfo{...}}
+app.put('/create_graph', function(req, res){
+
+});
+
+//params: graph { graphInfo{...}, nodeInfo{...}, edgeInfo{...}}
+app.put('/update_graph', function(req, res){
+
+});
+
+
+
 
 // more about routes
 	//getting simple requests
@@ -158,7 +196,7 @@ http.createServer(app).listen(app.get('port'), function(){
 });
 
 
-/*
+
 //Database connection
 // var client = new pg.Client(conString);
 var client = new pg.Client({user: 'prabhat', password: 'naing', database: 'tutor', host: 'localhost', port: 5432 });
@@ -170,7 +208,7 @@ client.connect(function(err) {
 	var create_Student = "CREATE TABLE IF NOT EXISTS student(email varchar PRIMARY KEY, firstName varchar, lastName varchar, password varchar, int frequency)";
 	var create_Prof = "CREATE TABLE IF NOT EXISTS professor(email varchar PRIMARY KEY, firstName varchar, lastName varchar, password varchar)";
 	var create_Course = "CREATE TABLE IF NOT EXISTS course(name varchar, year integer, semester varchar, PRIMARY KEY(name, year, semester))";
-	var create_ProfCourse = "CREATE TABLE IF NOT EXISTS professor_course(email varchar, courseId integer, PRIMARY KEY(email, courseId))";
+	var create_ProfCourse = "CREATE TABLE IF NOT EXISTS professor_course(email varchar, courseName varchar, courseYear integer, courseSemester varchar, PRIMARY KEY(email, courseName, courseYear, courseSemester))";
 	var create_StudentCourse = "CREATE TABLE IF NOT EXISTS student_course(email varchar, courseName varchar, courseYear integer, courseSemester varchar, PRIMARY KEY(email, courseName, courseYear, semester))";
 	var create_Project = "CREATE TABLE IF NOT EXISTS project(name text, description text, dueDate DATE, courseName varchar, courseYear integer, courseSemester varchar, PRIMARY KEY(courseName, courseYear, courseSemester, name))";
 	var create_StudentProject = "CREATE TABLE IF NOT EXISTS student_project(projectName text, courseName varchar, courseYear integer, courseSemester varchar, email varchar, graphId integer, PRIMARY KEY(projectName, courseName, courseYear, courseSemester, email, graphId))";
@@ -249,6 +287,6 @@ client.connect(function(err) {
 });
 
 exports.database = db.Database(client);
-*/
+
 
 console.log("database object created");
