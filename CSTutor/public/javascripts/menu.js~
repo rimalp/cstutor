@@ -36,7 +36,7 @@ Course.prototype.addStudent = function(student){
 	this.students[this.students.length] = student;
 };
 Course.prototype.getJSON = function(){
-	return {name: this.title, year: this.year, semester: this.semester};
+	return {courseName: this.title, courseYear: this.year, couresSemester: this.semester};
 };
 Course.prototype.constructor = Course;
 
@@ -46,8 +46,6 @@ var Student = function(title){
 	this.lastName = "";
 	this.password = "";
 	this.isAdmin = false;//use this
-	/*this.course = course;
-	course.students[course.students.length] = this;*/
 	
 	this.graphHistories = new Array();
 };

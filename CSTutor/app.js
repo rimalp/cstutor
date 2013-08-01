@@ -8,8 +8,8 @@ var express = require('express')
   , user = require('./routes/user')
   , http = require('http')
   , path = require('path')
-/*  , pg = require('pg')
-  , db = require('./database')*/
+  , pg = require('pg')
+  , db = require('./database')
   , index = require('./routes/index');
 
   var app = express();
@@ -158,14 +158,18 @@ http.createServer(app).listen(app.get('port'), function(){
 });
 
 
-/*
+
 //Database connection
 // var client = new pg.Client(conString);
-var client = new pg.Client({user: 'prabhat', password: 'naing', database: 'tutor', host: 'localhost', port: 5432 });
+console.log("before");
+var client = new pg.Client({user: 'rimalp', password: 'rimalp', database: 'gfb', host: 'localhost', port: 5432 });
+console.log("after");
 client.connect(function(err) {
+	console.log("connect called");
   	if(err) {
    		return console.error('could not connect to postgres: ', err);
   	}
+	console.log("connected");
   	//create all the tables here if not exist
 	var create_Student = "CREATE TABLE IF NOT EXISTS student(email varchar PRIMARY KEY, firstName varchar, lastName varchar, password varchar, int frequency)";
 	var create_Prof = "CREATE TABLE IF NOT EXISTS professor(email varchar PRIMARY KEY, firstName varchar, lastName varchar, password varchar)";
@@ -249,6 +253,6 @@ client.connect(function(err) {
 });
 
 exports.database = db.Database(client);
-*/
+
 
 console.log("database object created");
