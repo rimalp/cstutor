@@ -47,7 +47,7 @@ if ('development' == app.get('env')) {
 
 app.get('/', routes.index); //home page
 
-//==============  GET requests for database queries
+//==============  GET requests for database queries ===============================
 var sendPostResponse = function(req, res, err, result){
 	if(err){
 			res.writeHead(500, { 'Content-Type': 'text/plain' });
@@ -107,6 +107,44 @@ app.post('/login', function(req, res){
 	res.writeHead(200, { 'Content-Type': 'text/plain' });
 	res.end(JSON.stringify(test));
 });
+
+
+//===================================== PUT requests (Create or update of information) ================================
+
+//params: professor{email, lastName, firstName, password}
+app.put('/create_professor', function(req, res){
+
+});
+//params: student{email, lastName, firstName, password}
+app.put('/create_student', function(req, res){
+
+});
+
+//params: {course{name, year, semester}, professorEmail}
+app.put('/create_course', function(req, res){
+
+});
+
+//params: {course{name, year, semester}, studentEmail}
+app.put('/add_students', function(req, res){
+
+});
+
+//params: project{name, description, courseName, courseYear, description}
+app.put('/create_project', function(req, res){
+
+});
+
+//params: graph { graphInfo{...}, nodeInfo{...}, edgeInfo{...}}
+app.put('/create_graph', function(req, res){
+
+});
+
+//params: graph { graphInfo{...}, nodeInfo{...}, edgeInfo{...}}
+app.put('/update_graph', function(req, res){
+
+});
+
 
 
 
@@ -184,7 +222,7 @@ client.connect(function(err) {
 	var create_Student = "CREATE TABLE IF NOT EXISTS student(email varchar PRIMARY KEY, firstName varchar, lastName varchar, password varchar, int frequency)";
 	var create_Prof = "CREATE TABLE IF NOT EXISTS professor(email varchar PRIMARY KEY, firstName varchar, lastName varchar, password varchar)";
 	var create_Course = "CREATE TABLE IF NOT EXISTS course(name varchar, year integer, semester varchar, PRIMARY KEY(name, year, semester))";
-	var create_ProfCourse = "CREATE TABLE IF NOT EXISTS professor_course(email varchar, courseId integer, PRIMARY KEY(email, courseId))";
+	var create_ProfCourse = "CREATE TABLE IF NOT EXISTS professor_course(email varchar, courseName varchar, courseYear integer, courseSemester varchar, PRIMARY KEY(email, courseName, courseYear, courseSemester))";
 	var create_StudentCourse = "CREATE TABLE IF NOT EXISTS student_course(email varchar, courseName varchar, courseYear integer, courseSemester varchar, PRIMARY KEY(email, courseName, courseYear, semester))";
 	var create_Project = "CREATE TABLE IF NOT EXISTS project(name text, description text, dueDate DATE, courseName varchar, courseYear integer, courseSemester varchar, PRIMARY KEY(courseName, courseYear, courseSemester, name))";
 	var create_StudentProject = "CREATE TABLE IF NOT EXISTS student_project(projectName text, courseName varchar, courseYear integer, courseSemester varchar, email varchar, graphId integer, PRIMARY KEY(projectName, courseName, courseYear, courseSemester, email, graphId))";
