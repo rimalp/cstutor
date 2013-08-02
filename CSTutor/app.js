@@ -14,7 +14,7 @@ var express = require('express')
 
   var app = express();
 
-
+console.log(path.join(__dirname));
 app.configure(function(){
 	// all environments
 	app.set('port', process.env.PORT || 3000);
@@ -45,7 +45,7 @@ if ('development' == app.get('env')) {
 }
 
 
-app.get('/', routes.index); //home page
+app.get('/', function(req, res){res.render("home.html");}); //home page
 
 //==============  GET requests for database queries ===============================
 var sendPostResponse = function(req, res, err, result){

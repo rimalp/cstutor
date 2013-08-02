@@ -158,7 +158,7 @@ Database.prototype = {
 						}else{
 							var topGraphs = new Array();
 							var graphCount = rewult.rows.length;
-							for(int i=0; i<result.rows.length; i++){
+							for(var i=0; i<result.rows.length; i++){
 								//get nodes for each graph
 								var graph = {};
 								graph.graphInfo = result.rows[0];
@@ -188,7 +188,7 @@ Database.prototype = {
 						
 
 					});
-	}
+	},
 
 
 	//get sub-graphs for a node or a parent graph - works for both
