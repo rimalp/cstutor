@@ -161,6 +161,7 @@ http.createServer(app).listen(app.get('port'), function(){
 
 //Database connection
 // var client = new pg.Client(conString);
+
 console.log("before");
 var client = new pg.Client({user: 'rimalp', password: 'rimalp', database: 'gfb', host: 'localhost', port: 5432 });
 console.log("after");
@@ -169,7 +170,16 @@ client.connect(function(err) {
   	if(err) {
    		return console.error('could not connect to postgres: ', err);
   	}
+
 	console.log("connected");
+	 client.query('SELECT NOW() AS "theTime"', function(err, result) {
+	    if(err) {
+	      return console.error('error running a query.', err);
+	    }
+	    console.log(result.rows[0].theTime);
+	    //output: Tue Jan 15 2013 19:12:47 GMT-600 (CST)
+	  });
+
   	//create all the tables here if not exist
 	var create_Student = "CREATE TABLE IF NOT EXISTS student(email varchar PRIMARY KEY, firstName varchar, lastName varchar, password varchar, int frequency)";
 	var create_Prof = "CREATE TABLE IF NOT EXISTS professor(email varchar PRIMARY KEY, firstName varchar, lastName varchar, password varchar)";
@@ -185,13 +195,7 @@ client.connect(function(err) {
 	var create_Question = "CREATE TABLE IF NOT EXISTS question(id SERIAL, projectId integer, question varchar)";
 	var create_Answer = "CREATE TABLE IF NOT EXISTS answer(id SERIAL, questionId integer, graphId integer, answer varchar)";
 
-  client.query('SELECT NOW() AS "theTime"', function(err, result) {
-    if(err) {
-      return console.error('error running a query.', err);
-    }
-    console.log(result.rows[0].theTime);
-    //output: Tue Jan 15 2013 19:12:47 GMT-600 (CST)
-  });
+ 
 
     //create table queries execution
     client.query(create_Student, function(err, result) {
