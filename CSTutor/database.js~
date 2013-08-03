@@ -28,11 +28,12 @@ Database.prototype = {
 	getCoursesForStudent: function(studentEmail, callback){
 		var q = "SELECT * FROM course WHERE (name, year, semester) IN "+
 				"(SELECT courseName, courseYear, courseSemester FROM student_course WHERE email='"+studentEmail+"')";
-		rawQuery(q, function(err, result) {
+		client.query(q, function(err, result) {
 			if(err){
+				console.log("Database error: " + err);
 				callback(err);	
 			} else {
-				return(null, result);
+				callback(null, result);
 			}
 		});
 	},
@@ -50,7 +51,7 @@ Database.prototype = {
 				c.description = row.description;
 				courses.push(c);
 			}
-			return callback(err, courses);
+			callback(err, courses);
 		});
 	},
 
@@ -62,7 +63,7 @@ Database.prototype = {
 			if(err){
 				callback(err);	
 			} else {
-				return(null, result);
+				callback(null, result);
 			}
 		});		
 	},
@@ -79,7 +80,7 @@ Database.prototype = {
 				c.description = row.description;
 				courses.push(c);
 			}
-			return callback(err, courses);
+			callback(err, courses);
 		});
 	},	
 
@@ -108,7 +109,7 @@ Database.prototype = {
 				lab.courseId = row.courseId;
 				labs.push(lab);
 			}
-			return callback(err, labs);
+			callback(err, labs);
 		});
 	},
 
@@ -188,7 +189,7 @@ Database.prototype = {
 						
 
 					});
-	}
+	},
 
 
 	//get sub-graphs for a node or a parent graph - works for both
@@ -409,16 +410,29 @@ Database.prototype = {
 		})
 	},
 
-	createCourse: function(course, callback){
+	createCourse: function(course, professorEmail, callback){
 		client.query("SELECT year FROM course WHERE name=$1 AND year=$2 AND semester=$3",[course.name, course.year, course.semester], 
 		function(err, result){
 			if(err){
 				callback(err);
 			}else if(result.rows.rowCount ==0){
 				//insert
-				client.query("INSERT INTO course(name, year, semester) VALUES($1, $2, $3)")
-
-				//also insert in combined tables for many
+				client.query("INSERT INTO course(name, year, semester) VALUES($1, $2, $3)", [course.name, course.year, course.semester],
+				function(err, result){
+					if(err){
+						callback(err);
+					}else{
+						//insert into professor_course table
+						client.query("INSERT INTO professor_course VALUES($1, $2, $3, $4)", [professorEmail, course.name, course.year, course,semester],
+							function(err, callback){
+								if(err){
+									callback(err);
+								}else{
+									callback(null);
+								}
+							});
+					}
+				});
 			}else{
 				//update
 				client.query("UPDATE course SET name=$1, year=$2, semester=#3  WHERE name=#1 AND year=$2 AND semester=$3",
@@ -426,30 +440,65 @@ Database.prototype = {
 					if(err){
 						callback(err);
 					}else{
-
+						client.query("UPDATE professor_course SET email=$1, courseName=$2, courseYear=$3, courseSemester=$4 WHERE "+
+							          "email=$1, courseName=$2, courseYear=$3, courseSemester=$4", [professorEmail, course.name, course.year, course.semester],
+							          function(req, res){
+							          	if(err){
+							          		callback(err);
+							          	}else{
+							          		callback(null);
+							          	}
+						});
 					}
 				});
-
-				//also update combined tables
 			}
 		});
 	},
 
-	createProject: function(project, callback){
+	createProject: function(project, courseName, courseYear, courseSemester, callback){
 		client.query("SELECT year FROM project WHERE courseName=$1 AND courseYear=$2 AND courseSemester=$3 AND name=$4",
 		[project.courseName, project.courseYear, project.courseSemester, project.name], function(err, result){ 
 			if(err){
 				callback(err);
 			}else if(result.rows.rowCount ==0){
 				//insert
-
-				//also insert in combined tables
+				//name text, description text, dueDate DATE, courseName varchar, courseYear integer, courseSemester varchar, 
+				//PRIMARY KEY(courseName, courseYear, courseSemester, name)
+				client.query("INSERT INTO project VALUES ($1, $2, $3, $4, $5, $6)", [project.name, project.description, project.dueDate, courseName, courseYear, courseSemester],
+					function(req, res){
+						if(err){
+							callback(err);
+						}else{
+							callback(null);
+						}
+					});
 			}else{
 				//update
+				client.query("UPDATE project SET name=$1, description=$2, dueDate=$3, courseName=$4, courseYear=$5, courseSemester=$6 "+
+					"WHERE courseName=$4 AND courseYear=$5 AND courseSemester=$6 AND name=$1",
+					project.name, project.description, project.dueDate, courseName, courseYear, courseSemester], function(err){
+						if(err){
+							callback(err);
+						}else{
+							callback(null);
+						}
+					});			}
+		});
+	},
 
-				//also update combined tables
+	addStudentToCourse: function(email, courseName, courseYear, courseSemester, callback){
+		//first check if the student is alread in the studentcourse table
+		client.query("SELECT email FROM student_course WHERE email=$1", [email], function(err, result){
+			if(err){
+				callback(err);
+			}else if(result.rows.rowCount == 0){
+				//insert, then assign all the labs to the student too
+			}else{
+				//update, then assign all the labs to the student too
 			}
 		});
+
+
 	},
 
 	createProfessor2: function(prof, callback){

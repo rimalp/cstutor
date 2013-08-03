@@ -476,7 +476,7 @@ Database.prototype = {
 				//update
 				client.query("UPDATE project SET name=$1, description=$2, dueDate=$3, courseName=$4, courseYear=$5, courseSemester=$6 "+
 					"WHERE courseName=$4 AND courseYear=$5 AND courseSemester=$6 AND name=$1",
-					project.name, project.description, project.dueDate, courseName, courseYear, courseSemester], function(err){
+					[project.name, project.description, project.dueDate, courseName, courseYear, courseSemester], function(err){
 						if(err){
 							callback(err);
 						}else{

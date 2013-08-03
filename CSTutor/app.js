@@ -17,7 +17,7 @@ var express = require('express')
 console.log(path.join(__dirname));
 app.configure(function(){
 	// all environments
-	app.set('port', process.env.PORT || 3000);
+	app.set('port', process.env.PORT || 3001);
 	app.set('views', __dirname + '/views'); //__dirname is the curent dir
 	// app.set('view engine', 'html'); //default rendering is jade
 	app.engine('html', require('ejs').renderFile);
