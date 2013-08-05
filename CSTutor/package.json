@@ -8,7 +8,8 @@
   "dependencies": {
     "express": "*",
     "jade": "*",
-    "less-middleware": "*"
+    "less-middleware": "*",
+    "pg": "*"
   },
   "devDependencies": {
     "nodemon": "*"
