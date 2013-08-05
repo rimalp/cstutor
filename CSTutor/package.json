@@ -6,11 +6,14 @@
     "start": "nodemon app.js"
   },
   "dependencies": {
-    "express": "3.3.4",
+    "express": "*",
     "jade": "*",
     "less-middleware": "*"
   },
   "devDependencies": {
     "nodemon": "*"
+  },
+  "engines": {
+      "node": "0.4.9"
   }
 }

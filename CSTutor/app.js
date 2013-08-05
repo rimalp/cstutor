@@ -45,7 +45,7 @@ if ('development' == app.get('env')) {
 }
 
 
-app.get('/', function(req, res){res.render("home.html");}); //home page
+app.get('/', function(req, res){res.render("graph.html");}); //home page
 
 //==============  GET requests for database queries ===============================
 var sendPostResponse = function(req, res, err, result){
