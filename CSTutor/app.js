@@ -17,7 +17,7 @@ var express = require('express')
 console.log(path.join(__dirname));
 app.configure(function(){
 	// all environments
-	app.set('port', process.env.PORT || 3001);
+	app.set('port', process.env.PORT || 3000);
 	app.set('views', __dirname + '/views'); //__dirname is the curent dir
 	// app.set('view engine', 'html'); //default rendering is jade
 	app.engine('html', require('ejs').renderFile);
@@ -95,7 +95,9 @@ app.get('/', function(req, res){res.render("graph.html");}); //home page
 // 		res.render("abc.jade")
 // 	});
 
-http.createServer(app).listen(app.get('port'), function(){
+http.createServer(app).listen(app.get('port'), function(err){
+  if(err)
+	throw err;
   console.log('Express server listening on port ' + app.get('port'));
 });
 
@@ -104,7 +106,7 @@ http.createServer(app).listen(app.get('port'), function(){
 //Database connection
 // var client = new pg.Client(conString);
 console.log("before");
-var client = new pg.Client({user: 'rimalp', database: 'gfb', host: 'ww2.cs.lafayette.edu', port: 5432 });
+var client = new pg.Client({user: 'rimalp', password: 'rimalp', database: 'gfb', host: 'localhost', port: 5432 });
 console.log("after");
 client.connect(function(err) {
 	console.log("connect called");
@@ -356,7 +358,7 @@ app.put('/update_graph', function(req, res){
 // 	app.get("/", function(req, res){
 // 		res.render("abc.jade")
 // 	});
-
+/*
 http.createServer(app).listen(app.get('port'), function(){
   console.log('Express server listening on port ' + app.get('port'));
 });
@@ -461,6 +463,6 @@ client.connect(function(err) {
 });
 
 exports.database = db.Database(client);
-
+*/
 
 console.log("database object created");

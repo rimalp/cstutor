@@ -17,11 +17,7 @@ var express = require('express')
 console.log(path.join(__dirname));
 app.configure(function(){
 	// all environments
-<<<<<<< HEAD
-	app.set('port', process.env.PORT || 3000);
-=======
 	app.set('port', process.env.PORT || 3001);
->>>>>>> cbad6f70e0f1ec6ecd98ecc7983d518d9876290c
 	app.set('views', __dirname + '/views'); //__dirname is the curent dir
 	// app.set('view engine', 'html'); //default rendering is jade
 	app.engine('html', require('ejs').renderFile);
@@ -48,12 +44,8 @@ if ('development' == app.get('env')) {
   app.use(express.errorHandler());
 }
 
-<<<<<<< HEAD
 
 app.get('/', function(req, res){res.render("graph.html");}); //home page
-=======
-
-app.get('/', function(req, res){res.render("home.html");}); //home page
 
 
 
@@ -103,7 +95,9 @@ app.get('/', function(req, res){res.render("home.html");}); //home page
 // 		res.render("abc.jade")
 // 	});
 
-http.createServer(app).listen(app.get('port'), function(){
+http.createServer(app).listen(app.get('port'), function(err){
+  if(err)
+	throw err;
   console.log('Express server listening on port ' + app.get('port'));
 });
 
@@ -112,7 +106,7 @@ http.createServer(app).listen(app.get('port'), function(){
 //Database connection
 // var client = new pg.Client(conString);
 console.log("before");
-var client = new pg.Client({user: 'rimalp', database: 'gfb', host: 'ww2.cs.lafayette.edu', port: 5432 });
+var client = new pg.Client({user: 'rimalp', password: 'rimalp', database: 'gfb', host: 'localhost', port: 5432 });
 console.log("after");
 client.connect(function(err) {
 	console.log("connect called");
@@ -221,7 +215,6 @@ var database = new db.Database(client);
 console.log("database object created");
 
 
->>>>>>> cbad6f70e0f1ec6ecd98ecc7983d518d9876290c
 
 //==============  GET requests for database queries ===============================
 var sendPostResponse = function(req, res, err, result){
@@ -230,21 +223,13 @@ var sendPostResponse = function(req, res, err, result){
 			res.end("Error reading the database");
 		}else{
 			res.writeHead(200, { 'Content-Type': 'text/plain' });
-<<<<<<< HEAD
-			res.end(JSON.stringify(test));
-=======
 			res.end(JSON.stringify(result.rows));
->>>>>>> cbad6f70e0f1ec6ecd98ecc7983d518d9876290c
 		}
 }
 //get all the courses for a student. request body params:  studentEmail
 app.post('/courses_student', function(req, res){
-<<<<<<< HEAD
-	database.getCoursesForStudent(req.body.studentEmail, function(err, result){
-=======
 	console.log("get students request: " + req.body.email);
 	database.getCoursesForStudent(req.body.email, function(err, result){
->>>>>>> cbad6f70e0f1ec6ecd98ecc7983d518d9876290c
 		sendPostResponse(req, res, err, result);
 	});
 });
@@ -318,19 +303,6 @@ app.put('/add_students', function(req, res){
 //params: project{name, description, courseName, courseYear, description}
 app.put('/create_project', function(req, res){
 
-<<<<<<< HEAD
-});
-
-//params: graph { graphInfo{...}, nodeInfo{...}, edgeInfo{...}}
-app.put('/create_graph', function(req, res){
-
-});
-
-//params: graph { graphInfo{...}, nodeInfo{...}, edgeInfo{...}}
-app.put('/update_graph', function(req, res){
-
-=======
->>>>>>> cbad6f70e0f1ec6ecd98ecc7983d518d9876290c
 });
 
 //params: graph { graphInfo{...}, nodeInfo{...}, edgeInfo{...}}
@@ -342,7 +314,6 @@ app.put('/create_graph', function(req, res){
 app.put('/update_graph', function(req, res){
 
 });
-
 
 
 // more about routes
@@ -387,7 +358,7 @@ app.put('/update_graph', function(req, res){
 // 	app.get("/", function(req, res){
 // 		res.render("abc.jade")
 // 	});
-
+/*
 http.createServer(app).listen(app.get('port'), function(){
   console.log('Express server listening on port ' + app.get('port'));
 });
@@ -491,11 +462,7 @@ client.connect(function(err) {
     });
 });
 
-<<<<<<< HEAD
-exports.database = new db.Database(client);
-=======
 exports.database = db.Database(client);
->>>>>>> cbad6f70e0f1ec6ecd98ecc7983d518d9876290c
-
+*/
 
 console.log("database object created");
