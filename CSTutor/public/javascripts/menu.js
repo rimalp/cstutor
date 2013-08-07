@@ -174,8 +174,36 @@ function(data, status){
 		course.year = response[i].year;
 		course.semester = response[i].semester;
 		courses[i] = course;
+		
+		//get projects
+		getProjectsForCourse(course, getProjectsForCourseCallback(course));
+		
+		//get students
+		getStudentsForCourse(course, getStudentsForCourseCallback(course));
 	}
 });
+
+function getProjectsForCourseCallback(course){
+	return function(data, status){
+			var response = eval(data);
+			for(var i=0; i<response.length; i++){
+				var project = new Project(response[i].name, course);
+			}
+		};
+}
+
+function getStudentsForCourseCallback(course){
+	return function(data, status){
+			var response = eval(data);
+			for(var i=0; i<response.length; i++){
+				var student = new Student(response[i].email);
+				student.firstName = response[i].firstname;
+				student.lastName = response[i].lastname;
+				student.password = response[i].password;
+				course.addStudent(student);
+			}
+		};
+}
 /*
 var cs150 = new Course("CS 150");
 

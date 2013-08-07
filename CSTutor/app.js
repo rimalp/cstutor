@@ -253,13 +253,13 @@ app.put('/create_student', function(req, res){
 app.put('/create_course', function(req, res){
 	database.createCourse(req.body.courseName, req.body.courseYear, req.body.courseSemester, req.body.professorEmail, function(err, result){
 		sendPutRequest(req, res, err, result);
-	}
+	});
 });
 
 //params: {course{name, year, semester}, studentEmail}
 app.put('/add_students', function(req, res){
 	database.addStudentToCourse(req.body.studentEmail, req.body.courseName, req.body.courseYear, req.body.courseSemester, function(err, result){
-		sendPutRequest(req, res, err result);
+		sendPutRequest(req, res, err, result);
 	});
 });
 

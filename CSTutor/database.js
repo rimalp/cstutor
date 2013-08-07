@@ -67,7 +67,7 @@ Database.prototype = {
 	//get all the students in a course
 	getStudentsForCourse: function(courseName, courseYear, courseSemester, callback){
 		client.query("SELECT student.email, student.firstName, student.lastName, student.password, student.frequency FROM "+
-			"student, student_course WHERE student.email=student_course.email AND course.name=$1 AND course.year=$2 AND course.semester=$3",
+			"student, student_course WHERE student.email=student_course.email AND student_course.courseName=$1 AND student_course.courseYear=$2 AND student_course.courseSemester=$3",
 			[courseName, courseYear, courseSemester], function(err, result){
 				if(err){
 					callback(err);
@@ -536,7 +536,7 @@ Database.prototype = {
 	deleteProfessor: function(professorEmail, callback){
 	
 	},
-
+/*
 	deleteCourse: function(courseName, courseYear, courseSemester, callback){
 		client.query("DELETE FROM course WHERE courseName=$1 AND courseYear=$2 AND courseSemester=$3", [courseName, courseYear, courseSemester], function(err){
 			if(err){
@@ -551,7 +551,7 @@ Database.prototype = {
 				});
 		});
 	},
-	
+	*/
 	
 	deleteStudentFromCourse: function(courseName, courseYear, courseSemester, studentEmail, callback){
 		client.query("DELETE FROM student_course WHERE courseName=$1 AND courseYear=$2 AND courseSemester=$3 AND email=$4", [courseName, courseYear, courseSemester, studentEmail], function(err){
