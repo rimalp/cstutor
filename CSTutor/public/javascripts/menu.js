@@ -21,7 +21,7 @@ Base.prototype = {
 var Course = function(title){
 	Base.call(this, title);
 	this.year = 2013;
-	this.semester = "fall";
+	this.semester = "Fall";
 	this.projects = new Array();
 	this.students = new Array();
 };
@@ -166,6 +166,17 @@ var Response = function(prompt){
 }
 
 var courses = new Array();
+getCoursesForStudent({title: 'kellerj@lafayette.edu'}, 
+function(data, status){
+	var response = eval(data);
+	for(var i=0; i<response.length; i++){
+		var course = new Course(response[i].name);
+		course.year = response[i].year;
+		course.semester = response[i].semester;
+		courses[i] = course;
+	}
+});
+/*
 var cs150 = new Course("CS 150");
 
 var jack = new Student("Jack");
@@ -209,7 +220,7 @@ var cs205 = new Course("CS 205");
 
 courses[0] = cs150;
 courses[1] = cs205;
-
+*/
 function init(){
 	/*menu = document.getElementById("menu");
 	var listTitle = document.createElement('li');

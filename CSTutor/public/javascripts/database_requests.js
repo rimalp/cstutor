@@ -1,15 +1,13 @@
 //---------------------- GET ------------------------------
-function getCoursesForStudent(student){
+function getCoursesForStudent(student, callback){
 	$.post('/courses_student',
 		{email: student.title},
-		function(data, status) {
-		  console.log("Data: " + data + "\nStatus: " + status);
-		});
+		callback);
 }
 
 function getProjectsForCourse(course){
 	$.post('/projects',
-		course.getJSON(),
+		{courseName: course.title, courseYear: course.year, courseSemester: course.semester},
 		function(data, status) {
 		  console.log("Data: " + data + "\nStatus: " + status);
 		});
@@ -85,7 +83,7 @@ function createGraph(graph){
 	var nodeArray = new Array();
 	for(var i=0; i<graph.nodes.length; i++){
 		var node = graph.nodes[i];
-		nodeArray[nodeArray.length] = {nodeId: node.id, x: node.x, y: node.y, name: node.data, description: node.description, color: node.color};
+		nodeArray[nodeArray.length] = {nodeId: node.id, x: node.x, y: node.y, name: node.data, description: node.description, color: node.color, deleted: false};
 	}
 
 	var edgeArray = new Array();
@@ -94,17 +92,17 @@ function createGraph(graph){
 		edgeArray[edgeArray.length] = {sourceNode: edge.sourceNode.id, destNode: edge.destNode.id};
 	}
 	
-	var removedNodeArray = new Array();
 	for(var i=0; i<graph.removedNodes.length; i++){
 		var node = graph.removedNodes[i];
-		removedNodeArray[removedNodeArray.length] = {nodeId: node.id};
+		if(node.id > 0)
+			nodeArray[nodeArray.length] = {nodeId: node.id, x: node.x, y: node.y, name: node.data, description: node.description, color: node.color, deleted: true};
 	}
 	
 	$.post('/create_graph',
 		{graphId: graph.id, parentNodeId: graph.parent.id, version: graph.version, 
 			student: graph.graphHistory.student.title, course_name: graph.graphHistory.project.course.title, 
 			course_year: graph.graphHistory.project.course.year, course_semester: graph.graphHistory.project.course.semester, 
-			description: "", nodes: nodeArray, edges: edgeArray, removedNodes: removedNodeArray},
+			description: "", nodes: nodeArray, edges: edgeArray},
 		function(data, status) {
 		  console.log("Data: " + data + "\nStatus: " + status);
 		});

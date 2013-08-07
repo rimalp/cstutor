@@ -6,7 +6,7 @@
 	<script type="text/javascript" src="../public/javascripts/graph.js"></script>
 	<script type="text/javascript" src="../public/javascripts/menu.js"></script>
 	<script type="text/javascript" src="../public/javascripts/newproject.js"></script>
-	<script type="text/javascript" src"../public/javascripts/database_requests.js"></script>
+	<script type="text/javascript" src="../public/javascripts/database_requests.js"></script>
 	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 	<link href="../bootstrap/css/bootstrap.css" rel="stylesheet">
 	<link href="../bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
