@@ -3,24 +3,70 @@
 
 <style>
 
+body{
+	font-family: "Droid Sans",Helvetica,Arial,sans-serif;
+}
+
+button{
+	background-color: rgb(80, 129, 179);
+	color: white;
+	padding: 0.833em;
+	display: inline-block;
+	text-decoration: none;
+	border-radius: 0.3125em 0.3125em 0.3125em 0.3125em;
+	font-family: "Droid Sans",Helvetica,Arial,sans-serif;
+	line-height: 1.125em;
+	margin: 10px;
+	border: 1px solid rgb(217, 219, 221);
+}
+
+input{
+	padding: 1em 0.625em;
+	border-radius: 0.3125em 0.3125em 0.3125em 0.3125em;
+	border: 1px solid rgb(217, 219, 221);
+}
+
 </style>
+
+<script type="text/javascript" src="../public/javascripts/database_requests.js"></script>
+<script type="text/javascript">
+
+var existing_user = true;
+
+function toggleFunction(){
+	if(existing_user){
+		document.getElementById('confirm_password_div').style.visibility = "visible";
+		document.getElementById('create_button').innerHTML = "Existing User";
+		document.getElementById('login_title').innerHTML = "Create New Account";
+		existing_user = false;
+	}
+	else{
+		document.getElementById('confirm_password_div').style.visibility = "hidden";
+		document.getElementById('create_button').innerHTML = "Create New";
+		document.getElementById('login_title').innerHTML = "Existing User";
+		existing_user = true;
+	}
+}
+
+</script>
 
 </head>
 
-<body style="padding: 5% 0; text-align: center;">
+<body style="background-color: #84B4D5; text-align: center;">
+<div id="top" style="height: 20%;"></div>
 
-<div id="container" style="padding: 10% 0">
+<div id="container" style="background: rgb(245, 245, 245); display: table; vertical-align: middle; text-align: center;">
 
-	<div id="title_div" style="display: inline-block;">
-		<p>CSTutor</p>
+	<div id="title_div" style="display: inline-block; vertical-align: middle;">
+		CSTutor
 	</div>
 	
-	<div id="login_div" style="display: inline-block; border-left: solid black 1px">
-		<form id="login_form">
-			Username: <input><br>
-			Password: <input><br>
-			<button>Submit</button><button>Create Account</button>
-		</form>
+	<div id="login_div" style="border-left: solid black 1px; display: inline-block; vertical-align: middle;">
+			<h3 id="login_title">Existing User</h3>
+			<div style="float: left; text-align: left;">Username:<br><input></div><br>
+			<div style="float: left; text-align: left;">Password:<br><input type="password"></div><br>
+			<div id="confirm_password_div" style="visibility: hidden; float: left; text-align: left;">Confirm Password:<br> <input type="password"></div><br>
+			<button>Log In</button><button id="create_button" onclick="toggleFunction()">Create Account</button>
 	</div>
 
 </div>
