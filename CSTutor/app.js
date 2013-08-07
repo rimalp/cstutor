@@ -91,17 +91,6 @@ client.connect(function(err) {
     //output: Tue Jan 15 2013 19:12:47 GMT-600 (CST)
   });
 
-  /*client.query("drop table if exists student", function(err){
-	console.log("query");
-	if(err){
-		console.log("Error: " + err);
-	}
-  	else if(!err){
-  		client.query("create schema public", function(err){
-  			if(err){
-  				console.log("Error: " + err);
-  			}else{*/
-  				//create table queries execution
 			    client.query(create_Student, function(err, result) {
 				    if(err) {
 				      return console.error('error running a create student query.', err);
@@ -158,12 +147,6 @@ client.connect(function(err) {
 			    client.on('drain', function(){
 			    	console.log("FINISHED TABLE CREATION.");
 			    });
-
-  			//}
-
-  		//});
-  	//}
-  //});
     });
 
 var database = new db.Database(client);
@@ -237,7 +220,7 @@ app.post('/login', function(req, res){
 });
 
 
-//===================================== PUT requests (Create or update of information) ================================
+//===================================== PUT requests (CREATE/UPDATE of information) ================================
 
 var sendPutRequest = function(req, res, err, result){
 	if(err){
@@ -261,32 +244,72 @@ app.put('/create_professor', function(req, res){
 });
 //params: student{email, lastName, firstName, password}
 app.put('/create_student', function(req, res){
-	
+	database.createStudent(req.body.email, req.body.firstName, req.body.lastName, req.body.password, function(err, result){
+		sendPutRequest(req, res, err, result);
+	});
 });
 
 //params: {course{name, year, semester}, professorEmail}
 app.put('/create_course', function(req, res){
-
+	database.createCourse(req.body.courseName, req.body.courseYear, req.body.courseSemester, req.body.professorEmail, function(err, result){
+		sendPutRequest(req, res, err, result);
+	}
 });
 
 //params: {course{name, year, semester}, studentEmail}
 app.put('/add_students', function(req, res){
-
+	database.addStudentToCourse(req.body.studentEmail, req.body.courseName, req.body.courseYear, req.body.courseSemester, function(err, result){
+		sendPutRequest(req, res, err result);
+	});
 });
 
 //params: project{name, description, courseName, courseYear, description}
 app.put('/create_project', function(req, res){
-
+	database.createProject(req.body.projectName, req, body.projectDescription, req.body.courseName, req.body.courseYear, req.body.courseSemester,
+		function(err, result){
+			sendPutRequest(req, res, err, result);
+		});
 });
 
-//params: graph { graphInfo{...}, nodeInfo{...}, edgeInfo{...}}
+//params: graph { graphInfo{...}, nodeInfo{[x, y, ...., deleted(boolean), ...] }, edgeInfo{ array of edges ...}, studentEmail, courseName, courseYear, courseSemester, projectName}
 app.put('/create_graph', function(req, res){
-
+	database.createGraph(req.body.graphInfo, req.body.nodeInfo, req.body.edgeInfo, req.body.studentEmail, req.body.courseName, req.body.courseYear, req.body.courseSemester, 
+	 req.body.projectName, function(err, result){
+		sendPutRequest(req, res, err, result);
+	});
 });
 
-//params: graph { graphInfo{...}, nodeInfo{...}, edgeInfo{...}}
-app.put('/update_graph', function(req, res){
+//================================= DELETE requests ======================================
+//delete queries but uses POST verb because ajax(used in front end) cannot do DEL request
 
+//params: {studentEmail}
+app.post('/delete_student', function(req, res){
+	
+});
+
+//params: {professorEmail}
+app.post('/delete_professor', function(req, res){
+	
+});
+
+//params: {courseName, courseYear, courseSemester, professorEmail}
+app.post('/delete_course', function(req, res){
+	
+});
+
+//params: {studentEmail, courseName, courseYear, courseSemester}
+app.post('/remove_student_course', function(req, res){
+	
+});
+
+//params: {projectName, courseName, courseYear, courseSemester}
+app.post('/delete_project', function(req, res){
+	
+});
+
+//params: {graphid}
+app.post('/delete_graph', function(req, res){
+	
 });
 
 console.log("database object created");

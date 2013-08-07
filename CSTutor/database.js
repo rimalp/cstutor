@@ -213,19 +213,19 @@ Database.prototype = {
 	},
 
 	createCourse: function(name, year, semester, professorEmail, callback){
-		client.query("SELECT year FROM course WHERE name=$1 AND year=$2 AND semester=$3",[course.name, course.year, course.semester], 
+		client.query("SELECT year FROM course WHERE name=$1 AND year=$2 AND semester=$3",[name, year, semester], 
 		function(err, result){
 			if(err){
 				callback(err);
 			}else if(result.rows.rowCount ==0){
 				//insert
-				client.query("INSERT INTO course(name, year, semester) VALUES($1, $2, $3)", [course.name, course.year, course.semester],
+				client.query("INSERT INTO course(name, year, semester) VALUES($1, $2, $3)", [name, year, semester],
 				function(err, result){
 					if(err){
 						callback(err);
 					}else{
 						//insert into professor_course table
-						client.query("INSERT INTO professor_course VALUES($1, $2, $3, $4)", [professorEmail, course.name, course.year, course,semester],
+						client.query("INSERT INTO professor_course VALUES($1, $2, $3, $4)", [professorEmail, name, year, semester],
 							function(err, callback){
 								if(err){
 									callback(err);
@@ -238,12 +238,12 @@ Database.prototype = {
 			}else{
 				//update
 				client.query("UPDATE course SET name=$1, year=$2, semester=#3  WHERE name=#1 AND year=$2 AND semester=$3",
-				 [course.name, course.year, course.semester], function(err){
+				 [name, year, semester], function(err){
 					if(err){
 						callback(err);
 					}else{
 						client.query("UPDATE professor_course SET email=$1, courseName=$2, courseYear=$3, courseSemester=$4 WHERE "+
-							          "email=$1, courseName=$2, courseYear=$3, courseSemester=$4", [professorEmail, course.name, course.year, course.semester],
+							          "email=$1, courseName=$2, courseYear=$3, courseSemester=$4", [professorEmail, name, year, semester],
 							          function(req, res){
 							          	if(err){
 							          		callback(err);
@@ -259,7 +259,7 @@ Database.prototype = {
 
 	createProject: function(project, courseName, courseYear, courseSemester, callback){
 		client.query("SELECT year FROM project WHERE courseName=$1 AND courseYear=$2 AND courseSemester=$3 AND name=$4",
-		[project.courseName, project.courseYear, project.courseSemester, project.name], function(err, result){ 
+		[courseName, project.courseYear, project.courseSemester, project.name], function(err, result){ 
 			if(err){
 				callback(err);
 			}else if(result.rows.rowCount ==0){
@@ -355,7 +355,14 @@ Database.prototype = {
 														if(err){
 															callback(err);
 														}else{
-															callback(null, newGraphId);
+															//get max node id
+															client.query("SELECT max(id) AS maxNodeId FROM node", function(err, result){
+																if(err) callback(err, null);
+																else{
+																	callback(null, result);
+
+																}
+															});
 														}
 													});
 											}
@@ -407,7 +414,14 @@ Database.prototype = {
 												}
 												if(j==(edgeInfo.length-1)){
 													//done with update/delete
-													callback(null);
+													//get max node id
+													client.query("SELECT max(id) AS maxNodeId FROM node", function(err, result){
+														if(err) callback(err, null);
+														else{
+															callback(null, result);
+														}
+													});
+															
 												}
 											});
 									}
@@ -510,282 +524,49 @@ Database.prototype = {
 	},
 
 	deleteStudent: function(studentEmail, callback){
-
+		client.query("DELETE FROM student WHERE studentEmail=$1", [studentEmail], function(err, callback){
+			if(err){
+				callback(err);
+			}else{
+				
+			}
+		});
 	},
 
 	deleteProfessor: function(professorEmail, callback){
-
+	
 	},
 
 	deleteCourse: function(courseName, courseYear, courseSemester, callback){
-
-	},
-
-	deleteProject: function(projectName, courseName, courseYear, courseSemester, callback){
-
-	},
-
-
-
-
-
-
-
-
-	createProfessor2: function(prof, callback){
-		client.query("INSERT INTO professor(email, firstName, lastName, password) VALUES($1,$2,$3,$4) RETURNING id",
-			[prof.email, prof.firstName, prof.lastName, prof.password], function(err, result){
-				if(err){
-					callback(err);
-				}else{
-					prof.id = result.rows[0].id;
-					callback(null, prof);
-				}
-		});
-	},
-	createStudent2: function(student, callback){
-		client.query("INSERT INTO student(email, firstName, lastName, password, frequency) VALUES($1,$2,$3,$4, $5) RETURNING id",
-			[student.email, student.firstName, student.lastName, student.password, student.frequency], function(err, result){
-				if(err){
-					callback(err);
-				}else{
-					student.id = result.rows[0].id;
-					callback(null, student);
-				}
-			});
-	},
-
-	createCourse2: function(course, professor, callback){
-		client.query ("INSERT INTO course  (name) VALUES ($1) RETURNING id", [course.name], function(err, result){
-			if(err != null)
-				callback(err)
-			else{
-				course.id = result.rows[0].id;
-				//now update the professor_course table with the id
-				client.query("INSERT INTO professor_course VALUES ($1, $2)", [professor.email, course.id], function(err){
-					if(err==null){
-						callback(null, course);
-					}else{
-						callback(err);
-					}
-				});
-			}
-		});
-	},
-
-	addStudentToCourse2: function(studentEmail, courseId, callback){
-		client.query("INSERT INTO student_course VALUES($1, $2)", [studentEmail, courseId], function(err){
+		client.query("DELETE FROM course WHERE courseName=$1 AND courseYear=$2 AND courseSemester=$3", [courseName, courseYear, courseSemester], function(err){
 			if(err){
 				callback(err);
 			}else{
-				//assign all the labs in the course to the student
-				var q = "SELECT project.id as projectId FROM project where courseId="+courseId+"";
-				rawQuery(q, function(err, result){
+				client.query("DELETE FROM professor_course WHERE courseName=$1 AND courseYear=$2 AND courseSemester=$3", [courseName, courseYear, courseSemester], function(err){
 					if(err){
 						callback(err);
 					}else{
-						for(var i = 0; i<result.rows.rowCount; i++){
-							//insert the lab id and student id into the student_project table, leaving the graphid entry empty,
-							// update it later when you have the graph.
-							client.query("INSERT INTO student_project VALUES ($1, $2, $3)", [result.rows[i].projectId, studentEmail, -1], function(err){
-								if(err){
-									callback(err);
-								}else{
-									if(i = (result.rows.rowCount - 1)){
-										callback(null);
-									}
-								}
-							});
-						}
+						callback(null);
 					}
 				});
-			}
 		});
 	},
-
-	createLab2: function(lab, courseId, callback){
-		client.query("INSERT INTO project (description, dueDate, courseId) VALUES ($1, $2, $3) RETURNING id",
-			[lab.description, lab.date, courseId], function(err, result){
-				if(err){
-					callback(err);
-				}else{
-					lab.id = result.rows[0].id;
-					//also insert this lab/project into the student_project table
-					getStudentsForCourse(courseId, function(err, students){
-						if(!err){
-							for(var i = 0; i<students.rowCount; i++){
-								client.query("INSERT INTO student_project VALUES ($1, $2)", [students[i].email, courseId], function(err){
-									if(err){
-										callback(err);
-									}else if(i==(students.rowCount-1)){
-										//if all the student ids are successfull inserted, then return the new lab object
-										callback(null, lab);
-									}
-								});
-							}
-							//callback with the lab object after insert 
-						}else{
-							callback(err);
-						}
-					});
-				}
-
-		});
-	},
-
-	createGraph2: function(graph, projectId, studentEmail, callback){
-		//id SERIAL, version integer, topLevel boolean, description text
-		client.query("INSERT INTO graph (version, topLevel, description) VALUES ($1, $2, $3) RETURNING id", [graph.version, graph.topLevel, graph.title],
-		function(err, id){
-			if(err){
-				callback(err);
-			}else{
-				graph.id = row[0].id;
-				//now insert the nodes of the graph
-				for(var i=0; i<graph.nodes.length; i++){
-					createNode(graph.nodes[i], function(err){
-						if(err){
-							callback(err);
-						}else if(node.subgraph != false){
-							//node has a subgraph, recursively create it
-							createGraph(node.subgraph, projectId, studentEmail, function(err){
-								if(err){
-									callback(err);
-								}else{
-									callback(null); //returning the recursive case ***
-								}
-							});
-						}
-						if(i==(graph.nodes.length-1)){
-							callback(null) //base case return for createGraph function after all the nodes are created
-						}
-					});
-				}
-			}
-		});
-	}, 
-
-	createNode2: function(node, callback){
-		client.query("INSERT INTO node (x, y, graphId, parentNodeId, subGraphId, name, description) VALUES "+
-			"($1, $2, $3, $4, $5, $6, $7) RETURNING id", [node.x, node.y, node.graph.graphId, node.parentNodeId, node.subGraphId, node.name, node.description],
-			function(err, result){
-				if(err){
-					callback(err);
-				}else{
-					node.id = result.rows[0].id;
-					//now add edges to the node
-					for(var i=0; i<node.children.length; i++){
-						client.query("INSERT INTO edge VALUES ($1, $2, $3)", [node.graph.graphId, node.id, node.children[i].id], function(err){
-							if(err){
-								callback(err);
-							}else if(i==(node.children.length-1)){
-								callback(null, node);
-							}
-						});
-					}
-				}
-			});
-	},
-
-	//UPDATE queries ------------------------------------------------------------------------
-	updateStudent2: function(student, callback){
-		client.query("UPDATE student SET firstName=$1, lastName=$2, password=$3, frequency=$4 WHERE email=$5",
-			[student.firstName, student.lastName, student.password, student.frequency, student.email],
-			function(err){
-				callback(err);
-			});
-	},
-
-	updateProfessor2: function(professor, callback){
-		client.query("UPDATE professor SET firstName=$1, lastName=$2, password=$3 WHERE email=$4",
-			[professor.firstName, professor.lastName, professor.password, professor.email],
-			function(err){
-				callback(err);
-			});
-	},
-
-	updateCourse2: function(course, callback){
-		client.query("UPDATE course SET name=$1 WHERE id=$2", [course.name, course.id], function(err){
+	
+	
+	deleteStudentFromCourse: function(courseName, courseYear, courseSemester, studentEmail, callback){
+		client.query("DELETE FROM student_course WHERE courseName=$1 AND courseYear=$2 AND courseSemester=$3 AND email=$4", [courseName, courseYear, courseSemester, studentEmail], function(err){
 			callback(err);
 		});
 	},
 
-	updateLab2: function(lab, courseId, callback){
-		client.query("UPDATE project SET description=$1, dueDate=$2, courseId=$3 WHERE id=$4",
-			[lab.description, lab.dueDate, lab.courseId, lab.id], function(err){
-				callback(err);
-			});
-	}, 
-	updateNode2: function(node, graphId, callback){
-		if(node.id == -1){ //recently added node but not created yet in the existing graph
-			createNode(node, function(err){
-				callback(err);
-			});
-		}else{
-			client.query("UPDATE node SET x=$1, y=$2, graphId=$3, parentNodeId=$4, subGraphId=$5, name=$6, description=$7 WHERE id=$8", 
-				[node.x, node.y, node.graph.graphId, node.parentNodeId, node.subGraphId, node.name, node.description, node.id],
-				function(err){
-					if(err){
-						callback(err);
-					}else if(node.subgraph != false){
-						//update the subgraph if any
-						updateGraph(node.subgraph, function(err){
-							if(err){
-								callback(err);
-							}else{
-								//also update the edges *** some edges may alread exist for an existing node so delete all and 
-								//create new edges again as "upsert" seems tricky in postgresql
-								client.query("DELETE FROM edge WHERE graphId = $1 AND src=$2", [graphId, node.id], function(err){
-									if(err){
-										callback(err);
-									}else{
-										// create edges for this node again
-										for(var i=0; i<node.children.length; i++){
-											client.query("INSERT INTO edge VALUES ($1, $2, $3)", [node.graph.graphId, node.id, node.children[i].id], function(err){
-												if(err){
-													callback(err);
-												}else if(i==(node.children.length-1)){
-													callback(null);
-												}
-											});
-										}
-									}
-								});
-							}
-						});
-					}
-			});
-		}
+	deleteProject: function(projectName, courseName, courseYear, courseSemester, callback){
+		
 	},
 
-	updateGraph2: function(graph, callback){
-		client.query("UPDATE graph SET version=$1, topLevel=$2, description=$3 WHERE id=$4",
-		[graph.version, graph.topLevel, graph.description, graph.id], function(err){
-			if(err){
-				callback(err);
-			}else{
-				for(var i=0; i<graph.nodes.length; i++){
-					updateNode(graph.nodes[i], graph.graphId, function(err){
-						if(err){
-							callback(err);
-						}else if(i==(graph.nodes.length-1)){
-							callback(null);//done updading the graph recursively
-						}
-					});
-				}
-			}
-		});
-	},
 
 
 
 	//DELETE queries ------------------------------------------------------------------------
-	deleteStudentFromCourse: function(courseId, email, callback){
-		client.query("DELETE FROM student_course WHERE courseId=$1 AND email=$2", [courseId, email], function(err){
-			callback(err);
-		});
-	},
-
 
 
 	deleteNode: function(node, callback){
