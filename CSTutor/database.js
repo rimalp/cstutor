@@ -39,22 +39,6 @@ Database.prototype = {
 	},
 
 
-	getCoursesForStudent2: function(email, callback){
-		var q = "SELECT course.name, course.id FROM course.id WHERE IN"+
-		" (select course.id FROM course, student_course, student WHERE course.id=student_course.courseId"+
-		" AND student_course.email='"+email+"')";
-		rawQuery(q, function(err, result){
-			var courses = new Array();
-			for(var row in result){
-				var c = new Course();
-				c.id = row.id;
-				c.description = row.description;
-				courses.push(c);
-			}
-			callback(err, courses);
-		});
-	},
-
 	//query to get the courses for a given professor
 	getCoursesForProfessor: function(profEmail, callback){
 		var q = "SELECT * FROM course WHERE (name, year, semester) IN "+
@@ -67,22 +51,6 @@ Database.prototype = {
 			}
 		});		
 	},
-
-	getCoursesForProfessor2: function(email, callback){
-		var q = "SELECT course.id, course.name FROM course.id WHERE IN"+ 
-				" (select course.id FROM course, professor_course, professor WHERE course.id=processor_course.courseId"+
-				" AND professor_course.email='"+email+"')";
-		rawQuery(q, function(err, result){
-			var courses = new Array();
-			for(var row in result){
-				var c = new Course();
-				c.id = row.id;
-				c.description = row.description;
-				courses.push(c);
-			}
-			callback(err, courses);
-		});
-	},	
 
 
 	//get all projects for a course
@@ -97,22 +65,6 @@ Database.prototype = {
 		});
 	},
 
-	getLabsForCourse2: function(courseId, callback){
-		var q = "SELECT * from project WHERE courseId="+courseId+"";
-		rawQuery(q, function(err, result){
-			var labs = new Array();
-			for(var row in result){
-				var lab = new Project();
-				lab.id = row.id;
-				lab.description = row.description;
-				lab.date = row.date;
-				lab.courseId = row.courseId;
-				labs.push(lab);
-			}
-			callback(err, labs);
-		});
-	},
-
 	//get all the students in a course
 	getStudentsForCourse: function(courseName, courseYear, courseSemester, callback){
 		client.query("SELECT student.email, student.firstName, student.lastName, student.password, student.frequency FROM "+
@@ -124,24 +76,6 @@ Database.prototype = {
 					callback(null, result);
 				}
 			});
-	},
-
-	getStudentsForCourse2: function(courseId, callback){
-		var q = "SELECT * from student, student_course WHERE student_course.email=student.email AND"+ 
-				" student_course.courseId="+courseId+"";
-		rawQuery(q, function(err, result){
-			var students = new Array();
-			for(var row in result){
-				var s = new Course();
-				s.email = row.email;
-				s.firstName = row.firstName;
-				s.lastName = row.lastName;
-				s.password = row.password;
-				s.frequency = row.frequency;
-				students.push(s);
-			}
-			return callback(err, students);
-		});
 	},
 
 	//get a list of top level graphs for a given project and student
@@ -186,8 +120,6 @@ Database.prototype = {
 								});
 							}
 						}
-						
-
 					});
 	},
 
@@ -225,136 +157,136 @@ Database.prototype = {
 
 
 
-	//select the top level for a given project for a given student
-	getTopLevelGraphForLabForStudent2: function(projectId, email, callback){
-		var q = "SELECT * FROM graph, student_project WHERE student_project.projectId="+projectId+
-		" AND student_project.email='"+email+"' AND student_project.graphId=graph.graphId AND topLevel=true"+
-		" ORDER BY graph.version";
-		rawQuery(q, function(err, result){
-			if(err!=null){
-				return callback(err);
-			}else{
-				var graphs = new Array();
-				for(var row in result){
-					//TODO: do this for each row (graph);
-					var topGraph = new Graph();
-					topGraph.id = row.id;
-					topGraph.version = row.version;
-					topGraph.topLevel = row.topLevel;
-					topGraph.title = row.description;
-					getNodesForGraph(topGraph.id, topGraph, function(err, nodes){
-						topGraph.nodes = nodes;
-						//now fetch the subgraphs for each node (if exists) in a separate method recursively
-						for(var node in nodes){
-							if(node.subgraphId == -1) continue;
-							getSubGraphForNode(node, projectId, email, topGraph.version, function(err, resultSubGraph){
-								if(err != null)
-									console.log("error fetching subgraph for node. " + err);
-								else{
-									//assign the subgraph to the node
-									node.subgraph = resultSubGraph;
-									node.subgraphId = resultSubGraph.id;
-								}
-							});
-						}
-						graphs.push(topGraph);
-						//finally call the callback function with the Graph Object as desired
-						return callback(null, graphs);		
-					});
-				}
-			}
-		});
-	},
+	// //select the top level for a given project for a given student
+	// getTopLevelGraphForLabForStudent2: function(projectId, email, callback){
+	// 	var q = "SELECT * FROM graph, student_project WHERE student_project.projectId="+projectId+
+	// 	" AND student_project.email='"+email+"' AND student_project.graphId=graph.graphId AND topLevel=true"+
+	// 	" ORDER BY graph.version";
+	// 	rawQuery(q, function(err, result){
+	// 		if(err!=null){
+	// 			return callback(err);
+	// 		}else{
+	// 			var graphs = new Array();
+	// 			for(var row in result){
+	// 				//TODO: do this for each row (graph);
+	// 				var topGraph = new Graph();
+	// 				topGraph.id = row.id;
+	// 				topGraph.version = row.version;
+	// 				topGraph.topLevel = row.topLevel;
+	// 				topGraph.title = row.description;
+	// 				getNodesForGraph(topGraph.id, topGraph, function(err, nodes){
+	// 					topGraph.nodes = nodes;
+	// 					//now fetch the subgraphs for each node (if exists) in a separate method recursively
+	// 					for(var node in nodes){
+	// 						if(node.subgraphId == -1) continue;
+	// 						getSubGraphForNode(node, projectId, email, topGraph.version, function(err, resultSubGraph){
+	// 							if(err != null)
+	// 								console.log("error fetching subgraph for node. " + err);
+	// 							else{
+	// 								//assign the subgraph to the node
+	// 								node.subgraph = resultSubGraph;
+	// 								node.subgraphId = resultSubGraph.id;
+	// 							}
+	// 						});
+	// 					}
+	// 					graphs.push(topGraph);
+	// 					//finally call the callback function with the Graph Object as desired
+	// 					return callback(null, graphs);		
+	// 				});
+	// 			}
+	// 		}
+	// 	});
+	// },
 	//get all the nodes for the given graph
-	getNodesForGraph: function(graphId, ownerGraph, callback){
-		var nodesQuery = "SELECT * from nodes where graphId="+graphId+"";
-		rawQuery(nodesQuery, function(err, result){
-			if(err != null){
-				return callback(err);
-			}else{
-				var nodes = new Array();
-				for(var row in result){
-					var newNode = new Node();
-					newNode.id = row.id;
-					newNode.x = row.x;
-					newNode.y = row.y;
-					newNode.graph = ownerGraph;
-					newNode.parentNodeId = row.parentNodeId;
-					newNode.subgraphId = row.subGraphId;
-					newNode.data = row.name;
-					newNode.description = row.description;
-					nodes.push(newNode);
-				}
-				//fetch the edges for this node this node to the list of nodes to be returned
-				getEdgesForGraph(graphId, function(err, rows){
-					var src, dst;
-					for(var row in rows){
-						for(var node in nodes){
-							if(row.src == node.id)
-								src = node;
-							if(row.dst == node.id)
-								dst = node;
-						}
-						src.addChild(dst);
-					}
-				});
-				//return the array of nodes
-				callback(null, nodes)
-			}
-		});
-	}, 
+	// getNodesForGraph: function(graphId, ownerGraph, callback){
+	// 	var nodesQuery = "SELECT * from nodes where graphId="+graphId+"";
+	// 	rawQuery(nodesQuery, function(err, result){
+	// 		if(err != null){
+	// 			return callback(err);
+	// 		}else{
+	// 			var nodes = new Array();
+	// 			for(var row in result){
+	// 				var newNode = new Node();
+	// 				newNode.id = row.id;
+	// 				newNode.x = row.x;
+	// 				newNode.y = row.y;
+	// 				newNode.graph = ownerGraph;
+	// 				newNode.parentNodeId = row.parentNodeId;
+	// 				newNode.subgraphId = row.subGraphId;
+	// 				newNode.data = row.name;
+	// 				newNode.description = row.description;
+	// 				nodes.push(newNode);
+	// 			}
+	// 			//fetch the edges for this node this node to the list of nodes to be returned
+	// 			getEdgesForGraph(graphId, function(err, rows){
+	// 				var src, dst;
+	// 				for(var row in rows){
+	// 					for(var node in nodes){
+	// 						if(row.src == node.id)
+	// 							src = node;
+	// 						if(row.dst == node.id)
+	// 							dst = node;
+	// 					}
+	// 					src.addChild(dst);
+	// 				}
+	// 			});
+	// 			//return the array of nodes
+	// 			callback(null, nodes)
+	// 		}
+	// 	});
+	// }, 
 
-	getEdgesForGraph: function(graphId, callback){
-		var q = "SELECT * FROM edge WHERE graphId="+graphId+"";
-		rawQuery(q, function(err, result){
-			if(err != null){
-				return callback(err);
-			}else{
-				return callback(null, result);
-			}
-		});
-	},
+	// getEdgesForGraph: function(graphId, callback){
+	// 	var q = "SELECT * FROM edge WHERE graphId="+graphId+"";
+	// 	rawQuery(q, function(err, result){
+	// 		if(err != null){
+	// 			return callback(err);
+	// 		}else{
+	// 			return callback(null, result);
+	// 		}
+	// 	});
+	// },
 
-	getSubGraphForNode: function(node, projectId, email, version, callback){
-		var q = "SELECT * FROM graph, student_project WHERE student_project.projectId="+projectId+
-		" AND student_project.email='"+email+"' AND student_project.graphId=graph.graphId AND topLevel=false"+
-		" AND graph.parentNodeId="+node.id+" AND graph.version="+version+"";
+	// getSubGraphForNode: function(node, projectId, email, version, callback){
+	// 	var q = "SELECT * FROM graph, student_project WHERE student_project.projectId="+projectId+
+	// 	" AND student_project.email='"+email+"' AND student_project.graphId=graph.graphId AND topLevel=false"+
+	// 	" AND graph.parentNodeId="+node.id+" AND graph.version="+version+"";
 
-		rawQuery(q, function(err, result){
-			if(err != null){
-				callback(err);
-			}else{
-				var subGraph = new Graph();
-				subGraph.id = row[0].id;
-				subGraph.version = row[0].version;
-				subGraph.topLevel = row[0].topLevel;
-				subGraph.title = row[0].description;
+	// 	rawQuery(q, function(err, result){
+	// 		if(err != null){
+	// 			callback(err);
+	// 		}else{
+	// 			var subGraph = new Graph();
+	// 			subGraph.id = row[0].id;
+	// 			subGraph.version = row[0].version;
+	// 			subGraph.topLevel = row[0].topLevel;
+	// 			subGraph.title = row[0].description;
 				
-				//now get all the nodes for the graph
-				getNodesForGraph(subGraph.id, subGraph, function(err, nodes){
-						topGraph.nodes = nodes;
-						//now fetch the subgraphs for each node (if exists) recursively
-						for(var node in nodes){
-							if(node.subgraphId == -1) continue; //base case
-							//recursive call
-							getSubGraphForNode(node, projectId, email, topGraph.version, function(err, resultSubGraph){
-								if(err != null)
-									console.log("error fetching subgraph for node. " + err);
-								else{
-									//assign the subgraph to the node
-									node.subgraph = subGraph;
-									node.subgraphId = subGraph.id;
-								}
-							});
-						}
-						return callback(null, subGraph);
-				});
-			}
-		});
-	},
+	// 			//now get all the nodes for the graph
+	// 			getNodesForGraph(subGraph.id, subGraph, function(err, nodes){
+	// 					topGraph.nodes = nodes;
+	// 					//now fetch the subgraphs for each node (if exists) recursively
+	// 					for(var node in nodes){
+	// 						if(node.subgraphId == -1) continue; //base case
+	// 						//recursive call
+	// 						getSubGraphForNode(node, projectId, email, topGraph.version, function(err, resultSubGraph){
+	// 							if(err != null)
+	// 								console.log("error fetching subgraph for node. " + err);
+	// 							else{
+	// 								//assign the subgraph to the node
+	// 								node.subgraph = subGraph;
+	// 								node.subgraphId = subGraph.id;
+	// 							}
+	// 						});
+	// 					}
+	// 					return callback(null, subGraph);
+	// 			});
+	// 		}
+	// 	});
+	// },
 
 	
-	//CREATE-UPDATE queries -----need to check first if exists then insert if need be-------
+	//CREATE-UPDATE queries ----- need to check first if exists then insert if need be -------
 	//===============================================
 	createProfessor: function(professor, callback){
 		//check if it exists
@@ -487,19 +419,248 @@ Database.prototype = {
 	},
 
 	addStudentToCourse: function(email, courseName, courseYear, courseSemester, callback){
-		//first check if the student is alread in the studentcourse table
+		//first check if the student is already in the studentcourse table
 		client.query("SELECT email FROM student_course WHERE email=$1", [email], function(err, result){
 			if(err){
 				callback(err);
 			}else if(result.rows.rowCount == 0){
 				//insert, then assign all the labs to the student too
+				client.query("INSERT INTO student_course VALUES($1,$2,$3,$4)", [email, courseName, courseYear, courseSemester], function(err){
+					if(err){
+						callback(err);
+					}else{
+						//assign the labs in the course to the student by adding rows to student_project table
+						//NOT NECESSARY**
+					}
+				});
 			}else{
 				//update, then assign all the labs to the student too
+				client.query("UPDATE student_course SET email=$1, courseName=$2, courseYear=$3, courseSemester=$4 WHERE "+
+					"email=$1 AND courseName=$2 AND courseYear=$3 AND courseSemester=$4", [email, courseName, courseYear, courseSemester], 
+					function(err){
+						if(err){
+							callback(err);
+						}
+					});
 			}
 		});
+	},
 
+	//new graphs have id of -ve, all nodes and edges in such a graph are new too
+	//existing graph id > 0 
+	//new node id = -ve id value, existing node id >1, deleted node.deleted = true;
+	//for edges, if updating a graph, delete all first then enter them again since they dont have int ids
+	createGraph: function(graphInfo, nodeInfo, edgeInfo, studentEmail, courseName, courseYear, courseSemester, projectName, callback){
+		if(graphInfo.id = -1){
+			//create graph 
+			client.query("INSERT INTO graph values(parentNodeId, version, description) VALUES($1,$2,$3) RETURNING id", 
+				[graphInfo.parentNodeId, graphInfo.version, graphInfo.description], function(err, result){
+					var newGraphId = -1;
+					if(err){
+						callback(err);
+					}else{
+						newGraphId = result.rows[0].id;
+						//add the nodes in the graph
+						newNodeId = new Array();
+						var node = false;
+						for (var j = 0; j<nodeInfo.length; j++){
+							node = nodeInfo[j];
+							client.query("INSERT INTO node(id, x, y, graphId, name, description, color) VALUES($1,$2,$3,$4,$5,$6,$7)",
+							[(-1)*node.id, node.x, node.y, newGraphId, node.name, node.description, node.color], function(err, result){
+								if(err){
+									callback(err);
+								}else if(j==(nodeInfo.length-1)){
+									//add the edges too
+									var edge = false;
+									for(var i=0; i<edgeInfo.length; i++){
+										edge = edgeInfo[i];
+										client.query("INSERT INTO edge VALUES($1, $2, $3)", [(-1)*edge.sourceId, (-1)*edge.destinationId, newGraphId], function(err){
+											if(err){
+												callback(err);
+											}else if(i==(edgeInfo.length-1)){ 
+												//insert the graph in the student_project join table 
+												//projectName text, courseName varchar, courseYear integer, courseSemester varchar, email varchar, graphId integer, PRIMARY KEY(projectName, courseName, courseYear, courseSemester, email, graphId)
+												client.query("INSERT INTO student_project VALUES($1,$2,$3,$4,$5,$6,$7)",
+													[projectName, coursename, courseYear, CourseSemester, studentEmail, newGraphId], function(err){
+														if(err){
+															callback(err);
+														}else{
+															callback(null, newGraphId);
+														}
+													});
+											}
+										});
+									}
+								}
+							});
+						}
+					}
+				});
+		}else if(graphInfo.id > 0){
+			//update graph
+			client.query("UPDATE graph SET parentNodeId=$1, version=$2, description=$3 WHERE id=$4",
+				[graphInfo.parentNodeId, graphInfo.version, graphInfo.description, graphInfo.id], function(err, result){
+					//update or delete the nodes depending on the 
+					var graphId = graphInfo.id;
+					var node = false;
+					for(var i=0; i<nodeInfo.length; i++){
+						node = nodeInfo[i];
+						if(node.deleted == true){
+							this.deleteNode(node.id, function(err){
+								if(err){
+									callback(err);
+								}
+							});
+						}else{
+							//update
+							client.query("UPDATE node SET id=$1, x=$2, y=$3, graphId=$4, name=$5, description=$6, color=$7 "+
+								"WHERE id=$1", [node.id, node.x, node.y, node.graphId, node.name, node.description, node.color], function (err){
+									if(err){
+										callback(err);
+									}
+								});
+						}
+
+						//also delete and add the edges after the last one of the nodes are done with
+						if(i==(graphInfo.length-1)){
+							client.query("DELETE FROM edge WHERE graphId=$1",[graphId], function(err){
+								if(err){
+									callback(err);
+								}else{
+
+									//reinsert all the edges
+									for(var j=0; var<edgeInfo.length; j++){
+										client.query("INSERT INTO edge VALUES($1,$2,$3)",
+											[edgeInfo.sourceId, edgeInfo.destinationId, edgeInfo.graphId], function(err){
+												if(err){
+													callback(err);
+												}
+												if(j==(edgeInfo.length-1)){
+													//done with update/delete
+													callback(null);
+												}
+											});
+									}
+								}
+							});
+						}
+					}
+				});
+		}
+	},
+
+	deleteGraph: function(id, callback){
+		client.query("DELETE FROM graph WHERE id=$1", [id], function(err){
+			if(err){
+				callback(err);
+			}else{
+				//also delete the nodes and edges in that graph
+				client.query("DELETE FROM node WHERE graphId=$1 RETURNING sub");
+			}
+		});
+	},
+	deleteNode: function(id, callback){
+		client.query("DELETE FROM node WHERE id=$1", [id], function(err){
+			if(err){
+				callback(err);
+			}else{
+				this.deleteGraphWithParentNode(id, function(err){
+					if(err){
+						callback(err);
+					}else{
+						callback(null);
+					}
+				});
+			}
+		});
+	},
+
+	deleteGraphWithParentNode: function(parentNodeId, callback){
+		client.query("DELETE FROM graph WHERE parentNodeId=$1 returning id returning id",[parentNodeId], function(err, result){
+			var graphId = -1;
+			if(err){
+				callback(err);
+			}else if(result.rows.rowCount == 0){
+				callback(null);
+			}else{
+				var graphId = result.rows[0].id;
+				//get the ids of all the nodes in the deleted graph and delete them too, returning their ids
+				client.query("DELTE FROM edge WHERE graphId=$1",[graphId], function(err){
+					
+					if(err){
+						callback(err);
+					}else{
+
+						client.query("DELETE FROM node WHERE graphId=$1 RETURNING id",[graphId], function(err, result){
+							if(err){
+								callback(err);
+							}else if(result.rows.rowCount == 0){
+								//maybe its an empty graph, so return null
+								callback(null);
+							}else{
+								//delete all the nodes returned which in turn delete the graphs within them if any
+								for(var i=0; i<result.rows.rowCount; i++ ){
+									deleteGraphWithParentNode(result.rows[i], function(err){
+										if(err){
+											callback(err);
+										}
+										//return if youre done with recursive call for all the nodes
+										if(i==(result.rows.rowCount-1)){
+											callback(null);
+										}
+									});
+								}
+							}
+						});
+					}
+				});
+			}
+
+		});
+	},
+
+	getMaxNodeId: function(){
+		client.query("SELECT MAX(id) as id FROM node", function(err, result){
+			if(err){
+				callback(err);
+			}else{
+				callback(null, result.rows[0].id);
+			}
+		});
+	},
+
+	getMaxGraphId: function(){
+		client.query("SELECT MAX(id) as id FROM graph", function(err, result){
+			if(err){
+				callback(err);
+			}else{
+				callback(null, result.rows[0].id);
+			}
+		});
+	},
+
+	deleteStudent: function(studentEmail, callback){
 
 	},
+
+	deleteProfessor: function(professorEmail, callback){
+
+	},
+
+	deleteCourse: function(courseName, courseYear, courseSemester, callback){
+
+	},
+
+	deleteProject: function(projectName, courseName, courseYear, courseSemester, callback){
+
+	},
+
+
+
+
+
+
+
 
 	createProfessor2: function(prof, callback){
 		client.query("INSERT INTO professor(email, firstName, lastName, password) VALUES($1,$2,$3,$4) RETURNING id",
