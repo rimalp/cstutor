@@ -17,7 +17,7 @@ var express = require('express')
 console.log(path.join(__dirname));
 app.configure(function(){
 	// all environments
-	app.set('port', process.env.PORT || 3000);
+	app.set('port', process.env.PORT || 3009);
 	app.set('views', __dirname + '/views'); //__dirname is the curent dir
 	// app.set('view engine', 'html'); //default rendering is jade
 	app.engine('html', require('ejs').renderFile);
@@ -177,12 +177,12 @@ console.log("database object created");
 //==============  GET requests for database queries ===============================
 var sendPostResponse = function(req, res, err, result){
 	if(err){
-			res.writeHead(500, { 'Content-Type': 'text/plain' });
-			res.end("Error reading the database");
-		}else{
-			res.writeHead(200, { 'Content-Type': 'text/plain' });
-			res.end(JSON.stringify(result.rows));
-		}
+		res.writeHead(500, { 'Content-Type': 'text/plain' });
+		res.end("Error reading the database");
+	}else{
+		res.writeHead(200, { 'Content-Type': 'text/plain' });
+		res.end(JSON.stringify(result.rows));
+	}
 }
 //get all the courses for a student. request body params:  studentEmail
 app.post('/courses_student', function(req, res){
@@ -229,7 +229,7 @@ app.post('/graph', function(req, res){
 app.post('/login', function(req, res){
 	var name = req.body.name;
 	console.log("Name received:" + name);
-	//received form data, see below on how to get that data 
+	//received form data, get the data from req.body.(param)
 	var test = {param: "This is from the server."};
 	console.log("Request received.");
 	res.writeHead(200, { 'Content-Type': 'text/plain' });
@@ -239,13 +239,29 @@ app.post('/login', function(req, res){
 
 //===================================== PUT requests (Create or update of information) ================================
 
+var sendPutRequest = function(req, res, err, result){
+	if(err){
+		res.writeHead(500, { 'Content-Type': 'text/plain' });
+		res.end("Error reading the database");
+	}else{
+		res.writeHead(200, { 'Content-Type': 'text/plain' });
+		if(result){
+			res.end(JSON.stringify(result.rows));
+		}else{
+			res.end("Successfull updated the database.");
+		}
+	}
+}
+
 //params: professor{email, lastName, firstName, password}
 app.put('/create_professor', function(req, res){
-
+	database.createProfessor(req.body.email, req.body.firstName, req.body.lastName, req.body.password, function(err, result){
+		sendPutRequest(req, res, err, result);
+	});
 });
 //params: student{email, lastName, firstName, password}
 app.put('/create_student', function(req, res){
-
+	
 });
 
 //params: {course{name, year, semester}, professorEmail}

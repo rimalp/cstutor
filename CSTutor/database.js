@@ -1,10 +1,9 @@
 var client = null;
 
-
-var Database = function(connection){
+Database = function(connection){
 	client = connection;
 	testDB();
-}
+};
 exports.Database = Database;
 
 Database.prototype = {
@@ -156,149 +155,20 @@ Database.prototype = {
 
 
 
-
-	// //select the top level for a given project for a given student
-	// getTopLevelGraphForLabForStudent2: function(projectId, email, callback){
-	// 	var q = "SELECT * FROM graph, student_project WHERE student_project.projectId="+projectId+
-	// 	" AND student_project.email='"+email+"' AND student_project.graphId=graph.graphId AND topLevel=true"+
-	// 	" ORDER BY graph.version";
-	// 	rawQuery(q, function(err, result){
-	// 		if(err!=null){
-	// 			return callback(err);
-	// 		}else{
-	// 			var graphs = new Array();
-	// 			for(var row in result){
-	// 				//TODO: do this for each row (graph);
-	// 				var topGraph = new Graph();
-	// 				topGraph.id = row.id;
-	// 				topGraph.version = row.version;
-	// 				topGraph.topLevel = row.topLevel;
-	// 				topGraph.title = row.description;
-	// 				getNodesForGraph(topGraph.id, topGraph, function(err, nodes){
-	// 					topGraph.nodes = nodes;
-	// 					//now fetch the subgraphs for each node (if exists) in a separate method recursively
-	// 					for(var node in nodes){
-	// 						if(node.subgraphId == -1) continue;
-	// 						getSubGraphForNode(node, projectId, email, topGraph.version, function(err, resultSubGraph){
-	// 							if(err != null)
-	// 								console.log("error fetching subgraph for node. " + err);
-	// 							else{
-	// 								//assign the subgraph to the node
-	// 								node.subgraph = resultSubGraph;
-	// 								node.subgraphId = resultSubGraph.id;
-	// 							}
-	// 						});
-	// 					}
-	// 					graphs.push(topGraph);
-	// 					//finally call the callback function with the Graph Object as desired
-	// 					return callback(null, graphs);		
-	// 				});
-	// 			}
-	// 		}
-	// 	});
-	// },
-	//get all the nodes for the given graph
-	// getNodesForGraph: function(graphId, ownerGraph, callback){
-	// 	var nodesQuery = "SELECT * from nodes where graphId="+graphId+"";
-	// 	rawQuery(nodesQuery, function(err, result){
-	// 		if(err != null){
-	// 			return callback(err);
-	// 		}else{
-	// 			var nodes = new Array();
-	// 			for(var row in result){
-	// 				var newNode = new Node();
-	// 				newNode.id = row.id;
-	// 				newNode.x = row.x;
-	// 				newNode.y = row.y;
-	// 				newNode.graph = ownerGraph;
-	// 				newNode.parentNodeId = row.parentNodeId;
-	// 				newNode.subgraphId = row.subGraphId;
-	// 				newNode.data = row.name;
-	// 				newNode.description = row.description;
-	// 				nodes.push(newNode);
-	// 			}
-	// 			//fetch the edges for this node this node to the list of nodes to be returned
-	// 			getEdgesForGraph(graphId, function(err, rows){
-	// 				var src, dst;
-	// 				for(var row in rows){
-	// 					for(var node in nodes){
-	// 						if(row.src == node.id)
-	// 							src = node;
-	// 						if(row.dst == node.id)
-	// 							dst = node;
-	// 					}
-	// 					src.addChild(dst);
-	// 				}
-	// 			});
-	// 			//return the array of nodes
-	// 			callback(null, nodes)
-	// 		}
-	// 	});
-	// }, 
-
-	// getEdgesForGraph: function(graphId, callback){
-	// 	var q = "SELECT * FROM edge WHERE graphId="+graphId+"";
-	// 	rawQuery(q, function(err, result){
-	// 		if(err != null){
-	// 			return callback(err);
-	// 		}else{
-	// 			return callback(null, result);
-	// 		}
-	// 	});
-	// },
-
-	// getSubGraphForNode: function(node, projectId, email, version, callback){
-	// 	var q = "SELECT * FROM graph, student_project WHERE student_project.projectId="+projectId+
-	// 	" AND student_project.email='"+email+"' AND student_project.graphId=graph.graphId AND topLevel=false"+
-	// 	" AND graph.parentNodeId="+node.id+" AND graph.version="+version+"";
-
-	// 	rawQuery(q, function(err, result){
-	// 		if(err != null){
-	// 			callback(err);
-	// 		}else{
-	// 			var subGraph = new Graph();
-	// 			subGraph.id = row[0].id;
-	// 			subGraph.version = row[0].version;
-	// 			subGraph.topLevel = row[0].topLevel;
-	// 			subGraph.title = row[0].description;
-				
-	// 			//now get all the nodes for the graph
-	// 			getNodesForGraph(subGraph.id, subGraph, function(err, nodes){
-	// 					topGraph.nodes = nodes;
-	// 					//now fetch the subgraphs for each node (if exists) recursively
-	// 					for(var node in nodes){
-	// 						if(node.subgraphId == -1) continue; //base case
-	// 						//recursive call
-	// 						getSubGraphForNode(node, projectId, email, topGraph.version, function(err, resultSubGraph){
-	// 							if(err != null)
-	// 								console.log("error fetching subgraph for node. " + err);
-	// 							else{
-	// 								//assign the subgraph to the node
-	// 								node.subgraph = subGraph;
-	// 								node.subgraphId = subGraph.id;
-	// 							}
-	// 						});
-	// 					}
-	// 					return callback(null, subGraph);
-	// 			});
-	// 		}
-	// 	});
-	// },
-
 	
 	//CREATE-UPDATE queries ----- need to check first if exists then insert if need be -------
 	//===============================================
-	createProfessor: function(professor, callback){
+	createProfessor: function(email, firstName, lastName, password, callback){
 		//check if it exists
-		client.query("SELECT email FROM professor WHERE email=$1 LIMIT 1", [professor.email], function(err, result){
+		client.query("SELECT email FROM professor WHERE email=$1 LIMIT 1", [email], function(err, result){
 			if(err){
 				callback(err);
 			}else if(result.rows.rowCount == 0){
 				//insert
 				client.query("INSERT INTO professor(email, firstName, lastName, password) VALUES($1,$2,$3,$4)",
-					[professor.email, professor.firstName, professor.lastName, professor.password], function(err, result){
+					[email, firstName, lastName, password], function(err, result){
 					if(err){
-						callback(err);
+						callback(err, null);
 					}else{
 						callback(null, result);
 					}
@@ -307,7 +177,7 @@ Database.prototype = {
 			}else{
 				//update
 				client.query("UPDATE professor SET firstName=$1, lastName=$2, password=$3 WHERE email=$4",
-					[professor.firstName, professor.lastName, professor.password, professor.email],
+					[firstName, lastName, password, email],
 					function(err){
 						callback(err);
 				});
@@ -315,17 +185,17 @@ Database.prototype = {
 		});
 	},
 
-	createStudent: function(student, callback){
+	createStudent: function(email, firstName, lastName, password, callback){
 		//check if it exists
-		client.query("SELECT email FROM student WHERE email=$1 LIMIT 1", [professor.email], function(err, result){
+		client.query("SELECT email FROM student WHERE email=$1 LIMIT 1", [email], function(err, result){
 			if(err){
 				callback(err);
 			}else if(result.rows.rowCount == 0){
 				//insert
 				client.query("INSERT INTO student(email, firstName, lastName, password) VALUES($1,$2,$3,$4)",
-					[student.email, student.firstName, student.lastName, student.password], function(err, result){
+					[email, firstName, lastName, password], function(err, result){
 					if(err){
-						callback(err);
+						callback(err, null);
 					}else{
 						callback(null, result);
 					}
@@ -334,7 +204,7 @@ Database.prototype = {
 			}else{
 				//update
 				client.query("UPDATE student SET firstName=$1, lastName=$2, password=$3 WHERE email=$4",
-					[student.firstName, student.lastName, student.password, student.email],
+					[firstName, lastName, password, email],
 					function(err){
 						callback(err);
 				});
@@ -342,7 +212,7 @@ Database.prototype = {
 		})
 	},
 
-	createCourse: function(course, professorEmail, callback){
+	createCourse: function(name, year, semester, professorEmail, callback){
 		client.query("SELECT year FROM course WHERE name=$1 AND year=$2 AND semester=$3",[course.name, course.year, course.semester], 
 		function(err, result){
 			if(err){
@@ -529,7 +399,7 @@ Database.prototype = {
 								}else{
 
 									//reinsert all the edges
-									for(var j=0; var<edgeInfo.length; j++){
+									for(var j=0; j<edgeInfo.length; j++){
 										client.query("INSERT INTO edge VALUES($1,$2,$3)",
 											[edgeInfo.sourceId, edgeInfo.destinationId, edgeInfo.graphId], function(err){
 												if(err){
