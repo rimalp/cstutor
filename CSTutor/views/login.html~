@@ -52,16 +52,17 @@ function toggleFunction(){
 
 </head>
 
-<body style="background-color: #84B4D5; text-align: center;">
+<body style="text-align: center; background-color: #84B4D5;">
 <div id="top" style="height: 20%;"></div>
 
-<div id="container" style="background: rgb(245, 245, 245); display: table; vertical-align: middle; text-align: center;">
+<div id="container" style="background: rgb(245, 245, 245); padding: 20px 20px; width: 600px; margin: 0 auto; text-align: left;">
 
-	<div id="title_div" style="display: inline-block; vertical-align: middle;">
-		CSTutor
+	<div id="title_div" style="display: inline-block; vertical-align: top; text-align: center; width: 40%">
+		<div style="height: 15%"></div>
+		<h1>CSTutor</h1>
 	</div>
 	
-	<div id="login_div" style="border-left: solid black 1px; display: inline-block; vertical-align: middle;">
+	<div id="login_div" style="display: inline-block; border-left: solid black 1px; padding: 20px; text-align: center;">
 			<h3 id="login_title">Existing User</h3>
 			<div style="float: left; text-align: left;">Username:<br><input></div><br>
 			<div style="float: left; text-align: left;">Password:<br><input type="password"></div><br>
