@@ -538,15 +538,24 @@ Database.prototype = {
 	},
 
 	deleteCourse: function(courseName, courseYear, courseSemester, callback){
+		//delete the course
 		client.query("DELETE FROM course WHERE courseName=$1 AND courseYear=$2 AND courseSemester=$3", [courseName, courseYear, courseSemester], function(err){
 			if(err){
 				callback(err);
 			}else{
+				//delete the course association with the professor
 				client.query("DELETE FROM professor_course WHERE courseName=$1 AND courseYear=$2 AND courseSemester=$3", [courseName, courseYear, courseSemester], function(err){
 					if(err){
 						callback(err);
 					}else{
-						callback(null);
+						//also delete the course association with student
+						client.query("DELETE FROM student_course WHERE courseName=$1 AND courseYear=$2 AND courseSemester=$3", [courseName, courseYear, courseSemester], function(err){
+							if(err){
+								callback(err);
+							}else{
+								callback(null);
+							}
+						});
 					}
 				});
 		});
@@ -560,16 +569,39 @@ Database.prototype = {
 	},
 
 	deleteProject: function(projectName, courseName, courseYear, courseSemester, callback){
-		
+		client.query("DELETE FROM project WHERE name=$1 AND courseName=$2 AND courseYear=$3 AND courseSemseter=$4", [projectName, courseName, courseYear, courseSemester], function(err){
+			if(err){
+				callback(err);	
+			}else{
+				//delete the project association with the students (and subsequently delete the graphs associated with those projects if you uncomment the code block below)
+				client.query("DELETE FROM student_project WHERE projectName=$1 AND courseName=$2 AND courseYear=$3 AND courseSemseter=$4 RETURNING graphId", [projectName, courseName, courseYear, courseSemester]",
+				function(err, result){
+					if(err) callback(err);
+					else callback(null);
+					/*
+					for(var i=0; i<result.rowCount; i+=){
+						this.deleteGraph(result.rows[i].graphId, function(err){
+							if(err){
+								callback(err);
+							}
+							//return when all the graphs are deleted 
+							if(i==(result.rowCount-1)){
+								callback(null);
+							}
+						});
+					}
+					*/
+				});
+			}
+		});
 	},
-
 
 
 
 	//DELETE queries ------------------------------------------------------------------------
 
 
-	deleteNode: function(node, callback){
+	deleteNode2: function(node, callback){
 		client.query("DELETE FROM node WHERE id=$1", [node.id], function(err){
 			if(err){
 				callback(err);
@@ -595,7 +627,7 @@ Database.prototype = {
 		});
 	},
 
-	deleteGraph: function(graph, callback){
+	deleteGraph2: function(graph, callback){
 		client.query("DELETE FROM graph WHERE id=$1", [graph.id], function(err){
 			if(err){
 				callback(err);
@@ -614,7 +646,7 @@ Database.prototype = {
 		});
 	},
 
-	deleteAllLabsInCourse: function(courseId, callback){
+	deleteAllLabsInCourse2: function(courseId, callback){
 		client.query("DELETE FROM project WHERE courseId=$1 RETURNING id",[courseId], function(err, result){
 			if(err){
 				callback(err);
@@ -654,7 +686,7 @@ Database.prototype = {
 		});
 	},
 
-	deleteCourse: function(courseId, callback){
+	deleteCourse2: function(courseId, callback){
 		client.query("DELETE FROM course where id=$1", [courseId], function(err){
 			if(err){
 				callback(err);
