@@ -231,7 +231,7 @@ var sendPutRequest = function(req, res, err, result){
 		if(result){
 			res.end(JSON.stringify(result.rows));
 		}else{
-			res.end("Successfull updated the database.");
+			res.end("Successfully updated the database.");
 		}
 	}
 }
@@ -282,34 +282,53 @@ app.put('/create_graph', function(req, res){
 //================================= DELETE requests ======================================
 //delete queries but uses POST verb because ajax(used in front end) cannot do DEL request
 
+var sendDeleteRequest = function(req, res, err, result){
+	if(err){
+		res.writeHead(500, { 'Content-Type': 'text/plain' });
+		res.end("Error reading the database");
+	}else{
+		res.writeHead(200, { 'Content-Type': 'text/plain' });
+		if(result){
+			res.end(JSON.stringify(result.rows));
+		}else{
+			res.end("Successfully performed the deletion.");
+		}
+	}
+}
 //params: {studentEmail}
 app.post('/delete_student', function(req, res){
-	
+	database.deleteStudent(req.body.studentEmail, function(err, result){
+		sendDeleteRequest(req, res, err, result);
+	}
 });
 
-//params: {professorEmail}
-app.post('/delete_professor', function(req, res){
-	
-});
 
 //params: {courseName, courseYear, courseSemester, professorEmail}
 app.post('/delete_course', function(req, res){
-	
+	database.deleteCourse(req.body.courseName, req.body.courseYear, req.body.courseSemester, req.body.professorEmail, function(err, result){
+		sendDeleteRequest(req, res, err, result);
+	}
 });
 
 //params: {studentEmail, courseName, courseYear, courseSemester}
 app.post('/remove_student_course', function(req, res){
-	
+	database.deleteStudentFromCourse(req.body.courseName, req.body.courseYear, req.body.courseSemester, req.body.studentEmail, function(err, result){
+		sendDeleteRequest(req, res, err, result);
+	}
 });
 
 //params: {projectName, courseName, courseYear, courseSemester}
 app.post('/delete_project', function(req, res){
-	
+	database.deleteProject(req.body.projectName, req.body.courseName, req.body.courseYear, req.body.courseSemester, function(err, result){
+		sendDeleteRequest(req, res, err, result);
+	}
 });
 
 //params: {graphid}
 app.post('/delete_graph', function(req, res){
-	
+	database.deleteGraph(req.body.graphId, function(err, result){
+		sendDeleteRequest(req, res, err, result);
+	}
 });
 
 console.log("database object created");
