@@ -1,5 +1,38 @@
 var client = null;
 
+
+var saveGraphHelper = function(projectName, courseName, courseYear, courseSemester, studentEmail, newGraphId, callback){
+	//insert the graph in the student_project join table 
+	//projectName text, courseName varchar, courseYear integer, courseSemester varchar, email varchar, graphId integer, PRIMARY KEY(projectName, courseName, courseYear, courseSemester, email, graphId)
+	client.query("SELECT max(id) AS maxNodeId FROM node", function(err, result){
+		if(err) callback(err, null);
+		else{
+			result.rows[0].newGraphId = newGraphId;
+			console.log(JSON.stringify(result));
+			callback(null, result);
+		}
+	});
+	client.query("INSERT INTO student_project VALUES($1,$2,$3,$4,$5,$6)",
+		[projectName, courseName, courseYear, courseSemester, studentEmail, newGraphId], function(err){
+			if(err){
+				callback(err);
+			}
+	});
+};
+
+var updateGraphHelper = function(projectName, courseName, courseYear, courseSemester, studentEmail, newGraphId, callback){
+	console.log("returning after update");
+	//done with update/delete
+	//get max node id
+	client.query("SELECT max(id) AS maxNodeId FROM node", function(err, result){
+		if(err) callback(err, null);
+		else{
+			result.rows[0].newGraphId = newGraphId;
+			callback(null, result);
+		}
+	});
+};
+
 Database = function(connection){
 	client = connection;
 	testDB();
@@ -84,40 +117,67 @@ Database.prototype = {
 	*/
 	getTopLevelGraphForLabForStudentForAllVersions: function(projectName, courseName, courseYear, courseSemester, studentEmail, callback){
 		client.query("SElECT graph.* FROM graph, student_project WHERE graph.id=student_project.graphId AND "+ 
-					"graph.parentNodeId=-1 ANDstudent_project.projectName=$1 AND student_project.courseName=$2 AND "+
+					"graph.parentNodeId=-1 AND student_project.projectName=$1 AND student_project.courseName=$2 AND "+
 					"student_project.courseYear=$3 AND student_project.courseSemester=$4 AND student_project.email=$5",
 					[projectName, courseName, courseYear, courseSemester, studentEmail], function(err, result){
 						if(err){
+							console.log("error: " + err);
 							callback(err);
 						}else{
+							console.log("Result: " + JSON.stringify(result));
 							var topGraphs = new Array();
-							var graphCount = rewult.rows.length;
+							var graphCount = result.rows.length;
+							console.log("graphCount: " + graphCount);
 							for(var i=0; i<result.rows.length; i++){
 								//get nodes for each graph
 								var graph = {};
-								graph.graphInfo = result.rows[0];
+								graph.graphInfo = result.rows[i];
 								var graphId = result.rows[i].id;
-								client.query("SELECT * FROM node WHERE graphId=$1", graphId, function(err, result){
+								topGraphs[topGraphs.length] = graph;
+								
+								client.query("SELECT * FROM node WHERE graphId=$1", [graphId], function(err, result){
 									if(err){
-										callback(error);
-									}else{
-										graph.nodeInfo = result.rows;
-										//once the nodes are fetched, also fetch the edges for that graph
-										client.query("SELECT * FROM edge where graphId=$1",[graphId], function(err, result){
-											if(err){
-												callback(err);
-											}else{
-												graph.edgeInfo = result.rows;
-												topGraphs[topGraphs.length] = graph;
-												//if all the top level graphs fetched are processed, return the callback with json
-												if(i==(graphCount-1)){
-													callback(null, topGraphs);
-												}
+										callback(err);
+									}else if(result.rows.length > 0){
+										var graphId = result.rows[0].graphid;
+										var graph = false;
+										for(var j=0; j<topGraphs.length; j++){
+											if(topGraphs[j].graphInfo.id == graphId){
+												graph = topGraphs[j];
 											}
-										});
+										}
+										if(graph)
+											graph.nodeInfo = result.rows;
+										else
+											console.log("GRAPH NOT FOUND");
+									}
+								});
+								client.query("SELECT * FROM edge where graphId=$1",[graphId], function(err, result){
+									if(err){
+										callback(err);
+									}else if(result.rows.length > 0){
+										var graphId = result.rows[0].graphid;
+										var graph = false;
+										for(var j=0; j<topGraphs.length; j++){
+											if(topGraphs[j].graphInfo.id == graphId){
+												graph = topGraphs[j];
+											}
+										}
+										if(graph)
+											graph.edgeInfo = result.rows;
+										else
+											console.log("GRAPH NOT FOUND");
+										//if all the top level graphs fetched are processed, return the callback with json
+										/*if(i==(graphCount-1)){
+											callback(null, topGraphs);
+										}*/
 									}
 								});
 							}
+							client.query('SELECT NOW() AS "theTime"', function(err, results){
+								console.log("TopGraphs: " + JSON.stringify(topGraphs));
+								callback(null, topGraphs);
+							});
 						}
 					});
 	},
@@ -143,6 +203,7 @@ Database.prototype = {
 								callback(err);
 							}else{
 								graph.edgeInfo = result.rows;
+								console.log("Graph: " + JSON.stringify(graph));
 								callback(null, graph);
 							}
 						});
@@ -315,15 +376,17 @@ Database.prototype = {
 			}
 		});
 	},
-
 	//new graphs have id of -ve, all nodes and edges in such a graph are new too
 	//existing graph id > 0 
 	//new node id = -ve id value, existing node id >1, deleted node.deleted = true;
 	//for edges, if updating a graph, delete all first then enter them again since they dont have int ids
 	createGraph: function(graphInfo, nodeInfo, edgeInfo, studentEmail, courseName, courseYear, courseSemester, projectName, callback){
-		if(graphInfo.id = -1){
-			//create graph 
-			client.query("INSERT INTO graph values(parentNodeId, version, description) VALUES($1,$2,$3) RETURNING id", 
+		var shouldReturn = false;
+		console.log("graphInfo.id: " + graphInfo.id);
+		if(graphInfo.id < 0){
+			//create graph
+			console.log([graphInfo.parentNodeId, graphInfo.version, graphInfo.description]);
+			client.query("INSERT INTO graph (parentNodeId, version, description) VALUES($1,$2,$3) RETURNING id", 
 				[graphInfo.parentNodeId, graphInfo.version, graphInfo.description], function(err, result){
 					var newGraphId = -1;
 					if(err){
@@ -332,105 +395,136 @@ Database.prototype = {
 						newGraphId = result.rows[0].id;
 						//add the nodes in the graph
 						newNodeId = new Array();
+						//check if there is no node in the graph
+						//saveGraphHelper(nodeInfo.length, 0, projectName, courseName, courseYear, courseSemester, studentEmail, newGraphId, callback);
+						if(nodeInfo.length == 0)
+							saveGraphHelper(projectName, courseName, courseYear, courseSemester, studentEmail, newGraphId, callback);
+						
 						var node = false;
-						for (var j = 0; j<nodeInfo.length; j++){
-							node = nodeInfo[j];
-							client.query("INSERT INTO node(id, x, y, graphId, name, description, color) VALUES($1,$2,$3,$4,$5,$6,$7)",
-							[(-1)*node.id, node.x, node.y, newGraphId, node.name, node.description, node.color], function(err, result){
-								if(err){
-									callback(err);
-								}else if(j==(nodeInfo.length-1)){
-									//add the edges too
-									var edge = false;
-									for(var i=0; i<edgeInfo.length; i++){
-										edge = edgeInfo[i];
-										client.query("INSERT INTO edge VALUES($1, $2, $3)", [(-1)*edge.sourceId, (-1)*edge.destinationId, newGraphId], function(err){
-											if(err){
-												callback(err);
-											}else if(i==(edgeInfo.length-1)){ 
-												//insert the graph in the student_project join table 
-												//projectName text, courseName varchar, courseYear integer, courseSemester varchar, email varchar, graphId integer, PRIMARY KEY(projectName, courseName, courseYear, courseSemester, email, graphId)
-												client.query("INSERT INTO student_project VALUES($1,$2,$3,$4,$5,$6,$7)",
-													[projectName, coursename, courseYear, CourseSemester, studentEmail, newGraphId], function(err){
-														if(err){
-															callback(err);
-														}else{
-															//get max node id
-															client.query("SELECT max(id) AS maxNodeId FROM node", function(err, result){
-																if(err) callback(err, null);
-																else{
-																	callback(null, result);
-
-																}
-															});
-														}
-													});
-											}
-										});
+						var nodeMaxId = 0;
+						client.query("SELECT max(id) from node", function(err, result){
+							if(err) callback(err);
+							else{
+								nodeMaxId = result.rows[0].max;
+								console.log("NodeMaxId: " + nodeMaxId);
+								
+								for (var j = 0; j<nodeInfo.length; j++){
+									//saveGraphHelper(projectName, courseName, courseYear, courseSemester, studentEmail, newGraphId, callback);
+									if(j == 0){
+										//useless query for SELECT NOW() AS theTime to be the last query in client's query queue
+										saveGraphHelper(projectName, courseName, courseYear, courseSemester, studentEmail, newGraphId, callback);
 									}
+									node = nodeInfo[j];
+									console.log([(-1)*node.id+nodeMaxId, node.x, node.y, newGraphId, node.name, node.description, node.color]);
+									client.query("INSERT INTO node(id, x, y, graphId, name, description, color) VALUES($1,$2,$3,$4,$5,$6,$7)",
+									[(-1)*node.id+nodeMaxId, node.x, node.y, newGraphId, node.name, node.description, node.color], function(err, result){ console.log("insert query finished");
+										if(err){
+											callback(err);
+										}
+									});
 								}
-							});
-						}
+								for(var i=0; i<edgeInfo.length; i++){
+									edge = edgeInfo[i];
+									client.query("INSERT INTO edge VALUES($1, $2, $3)", [(-1)*edge.sourceNode+nodeMaxId, (-1)*edge.destNode+nodeMaxId, newGraphId], function(err){
+										if(err){
+											callback(err);
+										}
+									});
+								}
+							}						
+						});
+						
 					}
 				});
 		}else if(graphInfo.id > 0){
+			console.log("Udating Graph");
 			//update graph
 			client.query("UPDATE graph SET parentNodeId=$1, version=$2, description=$3 WHERE id=$4",
 				[graphInfo.parentNodeId, graphInfo.version, graphInfo.description, graphInfo.id], function(err, result){
 					//update or delete the nodes depending on the 
 					var graphId = graphInfo.id;
 					var node = false;
-					for(var i=0; i<nodeInfo.length; i++){
-						node = nodeInfo[i];
-						if(node.deleted == true){
-							this.deleteNode(node.id, function(err){
-								if(err){
-									callback(err);
-								}
-							});
-						}else{
-							//update
-							client.query("UPDATE node SET id=$1, x=$2, y=$3, graphId=$4, name=$5, description=$6, color=$7 "+
-								"WHERE id=$1", [node.id, node.x, node.y, node.graphId, node.name, node.description, node.color], function (err){
-									if(err){
-										callback(err);
-									}
-								});
-						}
-
-						//also delete and add the edges after the last one of the nodes are done with
-						if(i==(graphInfo.length-1)){
-							client.query("DELETE FROM edge WHERE graphId=$1",[graphId], function(err){
-								if(err){
-									callback(err);
-								}else{
-
-									//reinsert all the edges
-									for(var j=0; j<edgeInfo.length; j++){
-										client.query("INSERT INTO edge VALUES($1,$2,$3)",
-											[edgeInfo.sourceId, edgeInfo.destinationId, edgeInfo.graphId], function(err){
+					//updateGraphHelper(nodeInfo.length ,0, projectName, courseName, courseYear, courseSemester, studentEmail, newGraphId, callback);
+					if(nodeInfo.length == 0)
+						updateGraphHelper(projectName, courseName, courseYear, courseSemester, studentEmail, graphInfo.id, callback);
+					
+					var nodeMaxId = 0;
+						client.query("SELECT max(id) from node", function(err, result){
+							if(err) callback(err);
+							else{
+								nodeMaxId = result.rows[0].max;
+								for(var i=0; i<nodeInfo.length; i++){
+									node = nodeInfo[i];
+									if(node.deleted == true){
+										this.deleteNode(node.id, function(err){
+											if(err){
+												callback(err);
+											}
+										});
+									}else{
+										//update
+										//updateGraphHelper(projectName, courseName, courseYear, courseSemester, studentEmail, newGraphId, callback);
+										if(i == 0){
+											client.query('SELECT NOW() AS "theTime"', function(){updateGraphHelper(projectName, courseName, courseYear, courseSemester, studentEmail, graphInfo.id, callback);});
+										}
+										if(node.id > 0){
+											console.log("Updating Node " + JSON.stringify(node));
+											client.query("UPDATE node SET id=$1, x=$2, y=$3, name=$4, description=$5, color=$6 "+
+											"WHERE id=$1", [node.id, node.x, node.y, node.name, node.description, node.color], function (err){
 												if(err){
 													callback(err);
 												}
-												if(j==(edgeInfo.length-1)){
-													//done with update/delete
-													//get max node id
-													client.query("SELECT max(id) AS maxNodeId FROM node", function(err, result){
-														if(err) callback(err, null);
-														else{
-															callback(null, result);
-														}
-													});
-															
-												}
 											});
+										}
+										else{
+											console.log("Creating New Node " + JSON.stringify(node));
+											client.query("INSERT INTO node(id, x, y, graphId, name, description, color) VALUES($1,$2,$3,$4,$5,$6,$7)",
+												[(-1)*node.id+nodeMaxId, node.x, node.y, graphInfo.id, node.name, node.description, node.color], function(err, result){
+													if(err){
+														callback(err);
+													}
+												});
+										}
 									}
 								}
-							});
-						}
-					}
-				});
+								if(shouldReturn)
+									return;
+
+									//also delete and add the edges after the last one of the nodes are done with
+								client.query("DELETE FROM edge WHERE graphId=$1",[graphId], function(err){
+									if(err){
+										callback(err);
+									}else{
+
+										//reinsert all the edges
+										if(edgeInfo.length == 0){ 
+											console.log("edge length zero: ");										
+											//return updateGraphHelper(projectName, courseName, courseYear, courseSemester, studentEmail, newGraphId, callback);}
+											for(var j=0; j<edgeInfo.length; j++){
+												if(j == 0){
+													client.query('SELECT NOW() AS "theTime"', function(){updateGraphHelper(projectName, courseName, courseYear, courseSemester, studentEmail, newGraphId, callback);});
+												}
+												client.query("INSERT INTO edge VALUES($1,$2,$3)",
+													[edgeInfo.sourceId<0 ? (-1)*edgeInfo.sourceId+nodeMaxId: edgeInfo.sourceId, edgeInfo.destinationId<0 ? (-1)*edgeInfo.destinationId+nodeMaxId: edgeInfo.destinationId, edgeInfo.graphId], function(err){
+														if(err){
+															callback(err);
+														}
+								
+													});
+											}
+										}
+									}
+								});
+							}
+						});
+
+						
+					
+			});
 		}
+		
+		if(shouldReturn)
+			return;
 	},
 
 	deleteGraph: function(id, callback){
@@ -574,7 +668,7 @@ Database.prototype = {
 				callback(err);	
 			}else{
 				//delete the project association with the students (and subsequently delete the graphs associated with those projects if you uncomment the code block below)
-				client.query("DELETE FROM student_project WHERE projectName=$1 AND courseName=$2 AND courseYear=$3 AND courseSemseter=$4 RETURNING graphId", [projectName, courseName, courseYear, courseSemester]",
+				client.query("DELETE FROM student_project WHERE projectName=$1 AND courseName=$2 AND courseYear=$3 AND courseSemseter=$4 RETURNING graphId", [projectName, courseName, courseYear, courseSemester],
 				function(err, result){
 					if(err) callback(err);
 					else callback(null);
@@ -717,9 +811,10 @@ Database.prototype = {
 
 };
 
+
 var testDB = function(){
 
-}
+};
 //OTHER DB Model Objects - course, student, professor, lab
 // var Course = function(id, description){
 // 	this.id = id;

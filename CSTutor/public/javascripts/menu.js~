@@ -34,6 +34,7 @@ Course.prototype.getLinkType = function(){
 };
 Course.prototype.addStudent = function(student){
 	this.students[this.students.length] = student;
+	student.courses[student.courses.length] = this;
 };
 Course.prototype.getJSON = function(){
 	return {courseName: this.title, courseYear: this.year, couresSemester: this.semester};
@@ -48,6 +49,7 @@ var Student = function(title){
 	this.isAdmin = false;//use this
 	
 	this.graphHistories = new Array();
+	this.courses = new Array();
 };
 Student.prototype = new Base();
 Student.prototype.getLink = function(){
@@ -61,10 +63,21 @@ Student.prototype.getLinkType = function(){
 	return "Graphs";
 }
 Student.prototype.getGraphHistoryOf = function(project){
-	//console.log(this.title + " " + project.title);
+	//look for graph history
 	for(i in this.graphHistories){
 		if(this.graphHistories[i].project == project){
 			return this.graphHistories[i];
+		}
+	}
+	
+	//if its not there, create one if there should be one
+	for(var i=0; i<this.courses.length; i++){
+		var course = this.courses[i];
+		var index = course.projects.indexOf(project);
+		if(index >= 0){
+			var newGraphHistory = new GraphHistory(this, project);
+			this.graphHistories[this.graphHistories.length] = newGraphHistory;
+			return newGraphHistory;
 		}
 	}
 	return false;
@@ -176,19 +189,28 @@ function(data, status){
 		courses[i] = course;
 		
 		//get projects
-		getProjectsForCourse(course, getProjectsForCourseCallback(course));
+		getProjectsForCourse(course, getProjectsForCourseCallback(course/*, i==response.length-1*/));
 		
 		//get students
-		getStudentsForCourse(course, getStudentsForCourseCallback(course));
+		getStudentsForCourse(course, getStudentsForCourseCallback(course/*, i==response.length-1*/));
 	}
 });
 
-function getProjectsForCourseCallback(course){
+function getProjectsForCourseCallback(course/*, last*/){
 	return function(data, status){
 			var response = eval(data);
 			for(var i=0; i<response.length; i++){
 				var project = new Project(response[i].name, course);
 			}
+			/*if(last){
+				for(var i=0; i<course.projects.length; i++){
+					var project = course.projects[i];
+					for(var j=0; j<course.students.length; j++){
+						var student = course.students[i];
+						
+					}
+				}
+			}*/
 		};
 }
 
@@ -249,6 +271,7 @@ var cs205 = new Course("CS 205");
 courses[0] = cs150;
 courses[1] = cs205;
 */
+
 function init(){
 	/*menu = document.getElementById("menu");
 	var listTitle = document.createElement('li');
@@ -591,43 +614,87 @@ function displayDetailStudent(student, course, back){
 	detail_view.appendChild(projectDiv);
 }
 
+var loadedGraphs = false;
 function displayDetailStudentProject(student, project, back){
 	clearDetailView();
 	showDetailView();
 	
 	if(!back)
-		backButtonStack.push(getButtonDiv(student.title + "'s " + project.title, function(){backButtonStack.pop(); displayDetailStudentProject(student, project, true);}));
+		backButtonStack.push(getButtonDiv(student.title + "'s " + project.title, function(){backButtonStack.pop(); displayDetailStudentProject(student, project, true); updateGraph(currentGraph);}));
 	setTitle(student.title + "'s " + project.title, backButtonStack[backButtonStack.length-2]);
 	
-	var graphDiv = document.createElement("div");
-	getInfoBoxes("Graphs", student.getGraphHistoryOf(project).graphs, graphDiv, studentProjectToGraphOnClickMaker, function(){return "";}, newGraphFunction);
-	currentProject = project;
-	currentStudent = student;
+	var displayFunction = function(){
+		var graphDiv = document.createElement("div");
+		getInfoBoxes("Graphs", student.getGraphHistoryOf(project).graphs, graphDiv, studentProjectToGraphOnClickMaker, function(){return "";}, newGraphFunction);
+		currentProject = project;
+		currentStudent = student;
+
+		var promptDiv = document.createElement("div");
+		promptDiv.innerHTML = "<header class='header' id='detail_header'><h1 id='detail_title'>Prompts/Questions</h1></header>";
+		var graphHistory = student.getGraphHistoryOf(project);
+		for(var i=0; i<graphHistory.responses.length; i++){
+			var response = graphHistory.responses[i];
+			var prompt = response.prompt;
+			var text = document.createElement("p");
+			if(prompt.requiresInput){
+				text.innerHTML += "<br>Asked " + student.title + ": \"" + prompt.text + "\" when " + ((prompt.eventType == "version") ? "a new version was created " : ((prompt.eventType == "frequency") ? "the number of nodes was a multiple of " : "a version was saved ")) + ". ";
+				text.innerHTML += student.title + " answered:\"" + response.text + "\"";
+			}
+			else{
+				text.innerHTML += "<br>Prompted " + student.title + " when " + ((prompt.eventType == "version") ? "a new version was created " : ((prompt.eventType == "frequency") ? "the number of nodes was a multiple of " : "a version was saved ")) + "with: \"" + prompt.text + "\"";
+			}
+			promptDiv.appendChild(text);
+		}
+
+		detail_view.appendChild(graphDiv);
+		detail_view.appendChild(promptDiv);
+	};
 	
-	var promptDiv = document.createElement("div");
-	promptDiv.innerHTML = "<header class='header' id='detail_header'><h1 id='detail_title'>Prompts/Questions</h1></header>";
-	var graphHistory = student.getGraphHistoryOf(project);
-	for(var i=0; i<graphHistory.responses.length; i++){
-		var response = graphHistory.responses[i];
-		var prompt = response.prompt;
-		var text = document.createElement("p");
-		if(prompt.requiresInput){
-			text.innerHTML += "<br>Asked " + student.title + ": \"" + prompt.text + "\" when " + ((prompt.eventType == "version") ? "a new version was created " : ((prompt.eventType == "frequency") ? "the number of nodes was a multiple of " : "a version was saved ")) + ". ";
-			text.innerHTML += student.title + " answered:\"" + response.text + "\"";
-		}
-		else{
-			text.innerHTML += "<br>Prompted " + student.title + " when " + ((prompt.eventType == "version") ? "a new version was created " : ((prompt.eventType == "frequency") ? "the number of nodes was a multiple of " : "a version was saved ")) + "with: \"" + prompt.text + "\"";
-		}
-		promptDiv.appendChild(text);
+	if(!loadedGraphs){
+		getTopLevelGraphsForStudentProject(project.course, project, student,
+			function(data, status){
+				console.log("Data: " + data);
+				var response = eval(data);
+				for(var j=0; j<response.length; j++){
+					var graphInfo = response[j].graphInfo;
+					var nodeInfo = response[j].nodeInfo;
+					var edgeInfo = response[j].edgeInfo;
+				
+					var graph = new Graph();
+					graph.id = graphInfo.id;
+					graph.parent = false;
+					graph.version = graphInfo.version;
+				
+					for(var i=0; nodeInfo && i<nodeInfo.length; i++){
+						var node = new Node(nodeInfo[i].name, nodeInfo[i].description);
+						node.id = nodeInfo[i].id;
+						node.x = nodeInfo[i].x;
+						node.y = nodeInfo[i].y;
+						node.color = nodeInfo[i].color;
+						graph.addNode(node);
+					}
+				
+					for(var i=0; edgeInfo && i<edgeInfo.length; i++){
+						var source = graph.getNodeWithId(edgeInfo[i].src);
+						var destination = graph.getNodeWithId(edgeInfo[i].dst);
+						if(source && destination)
+							source.addChild(destination);
+					}
+					student.getGraphHistoryOf(project).addGraph(graph);
+				}
+				displayFunction();
+				loadedGraphs = true;
+			}
+		);
 	}
-	
-	detail_view.appendChild(graphDiv);
-	detail_view.appendChild(promptDiv);
+	else{
+		displayFunction();
+	}
 }
 
 function newGraphFunction(){
 	var currentGraphHistory = currentStudent.getGraphHistoryOf(currentProject);
-	var newGraph = currentGraphHistory.graphs[currentGraphHistory.graphs.length-1].clone();
+	var newGraph = (currentGraphHistory.graphs.length > 0) ? currentGraphHistory.graphs[currentGraphHistory.graphs.length-1].clone() : new Graph();
 	currentGraphHistory.addGraph(newGraph);
 	showGraph(newGraph);
 	currentProject.executeNewVersionPrompts(currentStudent);
