@@ -16,7 +16,7 @@ var currentGraph = false;
 var renderer = false;
 var centerX = 0;
 var centerY = 0;
-var uniqueID = 0;
+var uniqueID = -1;
 
 var onload = function(){
 	width = 5000;//document.getElementById("canvas").offsetWidth - 10;
@@ -27,6 +27,8 @@ var onload = function(){
 	background = r.rect(0, 0, width, height);
 	background.attr({fill: "white", stroke: "black"});
 	background.dblclick(function(){
+			updateGraph(currentGraph);
+			
 			focusNode.contract();
 			currentGraph = focusNode.graph;
 			focusNode = focusNode.owner;
@@ -371,15 +373,19 @@ Node.prototype = {
 				focusNode = selfRef;
 				centerX = selfRef.body.attr('cx');	
 				centerY = selfRef.body.attr('cy');
-				if(!selfRef.subgraph){
-					selfRef.subgraph = new Graph();
-					selfRef.subgraph.title = selfRef.data + "'s subgraph";
-					selfRef.subgraph.topLevel = false;
-					selfRef.subgraph.parent = selfRef;
-				}
-				currentGraph = selfRef.subgraph;
+				getSubGraph(focusNode, function(data, status){
+					console.log("data: " + data);
+					
+					if(!selfRef.subgraph){
+						selfRef.subgraph = new Graph();
+						selfRef.subgraph.title = selfRef.data + "'s subgraph";
+						selfRef.subgraph.topLevel = false;
+						selfRef.subgraph.parent = selfRef;
+					}
+					currentGraph = selfRef.subgraph;
 
-				selfRef.expand();
+					selfRef.expand();
+				});
 			}
 		};
 	},
@@ -592,6 +598,13 @@ Graph.prototype = {
 		}
 		
 		return cloneGraph;
+	},
+	getNodeWithId: function(id){
+		for(var i=0; i<this.nodes.length; i++){
+			if(this.nodes[i].id = id)
+				return this.nodes[i];
+		}
+		return false;
 	}
 };
 

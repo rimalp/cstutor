@@ -17,7 +17,7 @@ var express = require('express')
 console.log(path.join(__dirname));
 app.configure(function(){
 	// all environments
-	app.set('port', process.env.PORT || 3000);
+	app.set('port', process.env.PORT || 3009);
 	app.set('views', __dirname + '/views'); //__dirname is the curent dir
 	// app.set('view engine', 'html'); //default rendering is jade
 	app.engine('html', require('ejs').renderFile);
@@ -76,9 +76,9 @@ client.connect(function(err) {
 	var create_StudentCourse = "CREATE TABLE  student_course(email varchar, courseName varchar, courseYear integer, courseSemester varchar, PRIMARY KEY(email, courseName, courseYear, courseSemester))";
 	var create_Project = "CREATE TABLE  project(name text, description text, dueDate DATE, courseName varchar, courseYear integer, courseSemester varchar, PRIMARY KEY(courseName, courseYear, courseSemester, name))";
 	var create_StudentProject = "CREATE TABLE  student_project(projectName text, courseName varchar, courseYear integer, courseSemester varchar, email varchar, graphId integer, PRIMARY KEY(projectName, courseName, courseYear, courseSemester, email, graphId))";
-	var create_Node = "CREATE TABLE  node(id SERIAL, x integer, y integer, graphId integer, parentNodeId integer, name integer, description integer, color varchar)";
+	var create_Node = "CREATE TABLE  node(id SERIAL, x integer, y integer, graphId integer, parentNodeId integer, name varchar, description varchar, color varchar, PRIMARY KEY(id))";
 	var create_Edge = "CREATE TABLE  edge (src integer, dst integer, graphId integer, PRIMARY KEY(src, dst))";
-	var create_Graph = "CREATE TABLE  graph(id SERIAL, parentNodeId integer UNIQUE, version integer, description text)";
+	var create_Graph = "CREATE TABLE  graph(id SERIAL, parentNodeId integer, version integer, description text, PRIMARY KEY(id))";
 
 	var create_Question = "CREATE TABLE  question(id SERIAL, projectId integer, question varchar)";
 	var create_Answer = "CREATE TABLE  answer(id SERIAL, questionId integer, graphId integer, answer varchar)";
@@ -87,21 +87,10 @@ client.connect(function(err) {
     if(err) {
       return console.error('error running a query.', err);
     }
-    console.log(result.rows[0].theTime);
+    console.log(result.rows[0]);
     //output: Tue Jan 15 2013 19:12:47 GMT-600 (CST)
   });
 
-  /*client.query("drop table if exists student", function(err){
-	console.log("query");
-	if(err){
-		console.log("Error: " + err);
-	}
-  	else if(!err){
-  		client.query("create schema public", function(err){
-  			if(err){
-  				console.log("Error: " + err);
-  			}else{*/
-  				//create table queries execution
 			    client.query(create_Student, function(err, result) {
 				    if(err) {
 				      return console.error('error running a create student query.', err);
@@ -158,12 +147,6 @@ client.connect(function(err) {
 			    client.on('drain', function(){
 			    	console.log("FINISHED TABLE CREATION.");
 			    });
-
-  			//}
-
-  		//});
-  	//}
-  //});
     });
 
 var database = new db.Database(client);
@@ -177,12 +160,14 @@ console.log("database object created");
 //==============  GET requests for database queries ===============================
 var sendPostResponse = function(req, res, err, result){
 	if(err){
-			res.writeHead(500, { 'Content-Type': 'text/plain' });
-			res.end("Error reading the database");
-		}else{
-			res.writeHead(200, { 'Content-Type': 'text/plain' });
-			res.end(JSON.stringify(result.rows));
-		}
+		console.log(err);
+		res.writeHead(500, { 'Content-Type': 'text/plain' });
+		res.end("Error reading the database");
+	}else{
+		console.log("SendPostResponse: " + JSON.stringify(result));
+		res.writeHead(200, { 'Content-Type': 'text/plain' });
+		res.end(JSON.stringify(result.rows));
+	}
 }
 //get all the courses for a student. request body params:  studentEmail
 app.post('/courses_student', function(req, res){
@@ -209,12 +194,28 @@ app.post('/students', function(req, res){
 		sendPostResponse(req, res, err, result);
 	});
 });
+
+app.post('/query', function(req, res){
+		client.query(res.body.query, function(err, result){
+			res.writeHead(200, { 'Content-Type': 'text/plain' });
+			res.end(JSON.stringify(result));
+		});
+});
+
+
 //get top level graphs for a course>lab>student. 
 //request body params: projectName, courseName, courseYear, courseSemester, studentEmail
 app.post('/graphs_top', function(req, res){
 	database.getTopLevelGraphForLabForStudentForAllVersions(req.body.projectName, req.body.courseName, req.body.courseYear,
 		req.body.courseSemester, req.body.studentEmail, function(err, result){
-			sendPostResponse(req, res, err, result);
+			//sendPostResponse(req, res, err, result);
+			if(err){
+				res.writeHead(500, { 'Content-Type': 'text/plain' });
+				res.end("Error reading the database");
+			}else{
+				res.writeHead(200, { 'Content-Type': 'text/plain' });
+				res.end(JSON.stringify(result));
+			}
 		});
 });
 //get sub-level graphs. request body params: nodeId (graph's parentNodeId if zooming out and simply nodeId if zooming in)
@@ -222,14 +223,13 @@ app.post('/graph', function(req, res){
 	database.getSubGraphForNode(req.body.parentNodeId, function(err, result){
 		sendPostResponse(req, res, err, result);
 	});
-		sendPostResponse(req, res, err, result);
 });
 
 //for testing purposes
 app.post('/login', function(req, res){
 	var name = req.body.name;
 	console.log("Name received:" + name);
-	//received form data, see below on how to get that data 
+	//received form data, get the data from req.body.(param)
 	var test = {param: "This is from the server."};
 	console.log("Request received.");
 	res.writeHead(200, { 'Content-Type': 'text/plain' });
@@ -237,40 +237,117 @@ app.post('/login', function(req, res){
 });
 
 
-//===================================== PUT requests (Create or update of information) ================================
+//===================================== PUT requests (CREATE/UPDATE of information) ================================
+
+var sendPutRequest = function(req, res, err, result){
+	if(err){
+		console.log("Database Error: " + err);
+		res.writeHead(500, { 'Content-Type': 'text/plain' });
+		res.end("Error reading the database");
+	}else{
+		res.writeHead(200, { 'Content-Type': 'text/plain' });
+		if(result){
+			res.end(JSON.stringify(result.rows));
+		}else{
+			res.end("Successfully updated the database.");
+		}
+	}
+}
 
 //params: professor{email, lastName, firstName, password}
 app.put('/create_professor', function(req, res){
-
+	database.createProfessor(req.body.email, req.body.firstName, req.body.lastName, req.body.password, function(err, result){
+		sendPutRequest(req, res, err, result);
+	});
 });
 //params: student{email, lastName, firstName, password}
 app.put('/create_student', function(req, res){
-
+	database.createStudent(req.body.email, req.body.firstName, req.body.lastName, req.body.password, function(err, result){
+		sendPutRequest(req, res, err, result);
+	});
 });
 
 //params: {course{name, year, semester}, professorEmail}
 app.put('/create_course', function(req, res){
-
+	database.createCourse(req.body.courseName, req.body.courseYear, req.body.courseSemester, req.body.professorEmail, function(err, result){
+		sendPutRequest(req, res, err, result);
+	});
 });
 
 //params: {course{name, year, semester}, studentEmail}
 app.put('/add_students', function(req, res){
-
+	database.addStudentToCourse(req.body.studentEmail, req.body.courseName, req.body.courseYear, req.body.courseSemester, function(err, result){
+		sendPutRequest(req, res, err, result);
+	});
 });
 
 //params: project{name, description, courseName, courseYear, description}
 app.put('/create_project', function(req, res){
-
+	database.createProject(req.body.projectName, req, body.projectDescription, req.body.courseName, req.body.courseYear, req.body.courseSemester,
+		function(err, result){
+			sendPutRequest(req, res, err, result);
+		});
 });
 
-//params: graph { graphInfo{...}, nodeInfo{...}, edgeInfo{...}}
-app.put('/create_graph', function(req, res){
-
+//params: graph { graphInfo{...}, nodeInfo{[x, y, ...., deleted(boolean), ...] }, edgeInfo{ array of edges ...}, studentEmail, courseName, courseYear, courseSemester, projectName}
+app.post('/create_graph', function(req, res){
+	console.log("req.body.edgeInfo: " + JSON.stringify(eval(req.body.edgeInfo)));
+	database.createGraph(req.body.graphInfo, eval(req.body.nodeInfo), eval(req.body.edgeInfo), req.body.studentEmail, req.body.courseName, req.body.courseYear, req.body.courseSemester, 
+	 req.body.projectName, function(err, result){
+		sendPutRequest(req, res, err, result);
+	});
 });
 
-//params: graph { graphInfo{...}, nodeInfo{...}, edgeInfo{...}}
-app.put('/update_graph', function(req, res){
+//================================= DELETE requests ======================================
+//delete queries but uses POST verb because ajax(used in front end) cannot do DEL request
 
+var sendDeleteRequest = function(req, res, err, result){
+	if(err){
+		res.writeHead(500, { 'Content-Type': 'text/plain' });
+		res.end("Error reading the database");
+	}else{
+		res.writeHead(200, { 'Content-Type': 'text/plain' });
+		if(result){
+			res.end(JSON.stringify(result.rows));
+		}else{
+			res.end("Successfully performed the deletion.");
+		}
+	}
+}
+//params: {studentEmail}
+app.post('/delete_student', function(req, res){
+	database.deleteStudent(req.body.studentEmail, function(err, result){
+		sendDeleteRequest(req, res, err, result);
+	})
+});
+
+
+//params: {courseName, courseYear, courseSemester, professorEmail}
+app.post('/delete_course', function(req, res){
+	database.deleteCourse(req.body.courseName, req.body.courseYear, req.body.courseSemester, req.body.professorEmail, function(err, result){
+		sendDeleteRequest(req, res, err, result);
+	})
+});
+
+//params: {studentEmail, courseName, courseYear, courseSemester}
+app.post('/remove_student_course', function(req, res){
+	database.deleteStudentFromCourse(req.body.courseName, req.body.courseYear, req.body.courseSemester, req.body.studentEmail, function(err, result){
+		sendDeleteRequest(req, res, err, result);
+	})
+});
+
+//params: {projectName, courseName, courseYear, courseSemester}
+app.post('/delete_project', function(req, res){
+	database.deleteProject(req.body.projectName, req.body.courseName, req.body.courseYear, req.body.courseSemester, function(err, result){
+		sendDeleteRequest(req, res, err, result);
+	})
+});
+
+//params: {graphid}
+app.post('/delete_graph', function(req, res){
+	database.deleteGraph(req.body.graphId, function(err, result){
+		sendDeleteRequest(req, res, err, result);
+	})
 });
 
 console.log("database object created");

@@ -5,36 +5,28 @@ function getCoursesForStudent(student, callback){
 		callback);
 }
 
-function getProjectsForCourse(course){
+function getProjectsForCourse(course, callback){
 	$.post('/projects',
 		{courseName: course.title, courseYear: course.year, courseSemester: course.semester},
-		function(data, status) {
-		  console.log("Data: " + data + "\nStatus: " + status);
-		});
+		callback);
 }
 
-function getStudentsForCourse(course){
+function getStudentsForCourse(course, callback){
 	$.post('/students',
-		{courseName: course.title, courseYear: course.year, couresSemester: course.semester},
-		function(data, status) {
-		  console.log("Data: " + data + "\nStatus: " + status);
-		});
+		{courseName: course.title, courseYear: course.year, courseSemester: course.semester},
+		callback);
 }
 
-function getTopLevelGraphsForStudentProject(course, project, student){
+function getTopLevelGraphsForStudentProject(course, project, student, callback){
 	$.post('/graphs_top',
 		{projectName : project.title, courseName: course.title, courseYear: course.year, courseSemester: course.semester, studentEmail: student.title},
-		function(data, status) {
-		  console.log("Data: " + data + "\nStatus: " + status);
-		});
+		callback);
 }
 
-function getSubGraph(node, parentNode){
+function getSubGraph(parentNode, callback){
 	$.post('/graph',
-		{nodeId: node.id, parentNodeId: parentNodeId.id},
-		function(data, status) {
-		  console.log("Data: " + data + "\nStatus: " + status);
-		});
+		{parentNodeId: parentNode.id},
+		callback);
 }
 
 
@@ -79,11 +71,19 @@ function createProject(project, course){
 		});
 }
 
-function createGraph(graph){
+function runQuery(q){
+	$.post('/query',
+		{query: q},
+		function(data, status) {
+		  console.log("Data: " + data + "\nStatus: " + status);
+		});
+}
+
+function updateGraph(graph){
 	var nodeArray = new Array();
 	for(var i=0; i<graph.nodes.length; i++){
 		var node = graph.nodes[i];
-		nodeArray[nodeArray.length] = {nodeId: node.id, x: node.x, y: node.y, name: node.data, description: node.description, color: node.color, deleted: false};
+		nodeArray[nodeArray.length] = {id: node.id, x: Math.round(node.x), y: Math.round(node.y), graphId: node.graph.id, name: node.data, description: node.description, color: node.color, deleted: false};
 	}
 
 	var edgeArray = new Array();
@@ -91,20 +91,44 @@ function createGraph(graph){
 		var edge = graph.edges[i];
 		edgeArray[edgeArray.length] = {sourceNode: edge.sourceNode.id, destNode: edge.destNode.id};
 	}
-	
+	console.log(JSON.stringify(edgeArray));
 	for(var i=0; i<graph.removedNodes.length; i++){
 		var node = graph.removedNodes[i];
 		if(node.id > 0)
-			nodeArray[nodeArray.length] = {nodeId: node.id, x: node.x, y: node.y, name: node.data, description: node.description, color: node.color, deleted: true};
+			nodeArray[nodeArray.length] = {id: node.id, x: Math.round(node.x), y: Math.round(node.y), graphId: node.graph.id, name: node.data, description: node.description, color: node.color, deleted: true};
 	}
+	var reqData = {};
+	reqData.graphInfo = {id: graph.id, parentNodeId: graph.parent ? graph.parent.id : -1, version: graph.version, description: "No description"};
 	
+	//get top level graph
+	var currentGraph = graph;
+	while(currentGraph.parent){
+		currentGraph = currentGraph.parent.graph;
+	}
+	var topLevelGraphHistory = currentGraph.graphHistory;
+	
+	reqData.studentEmail = topLevelGraphHistory.student.title;
+	reqData.courseName = topLevelGraphHistory.project.course.title;
+	reqData.courseYear = topLevelGraphHistory.project.course.year;
+	reqData.courseSemester = topLevelGraphHistory.project.course.semester;
+	reqData.projectName = topLevelGraphHistory.project.title;
+	reqData.edgeInfo = JSON.stringify(edgeArray);
+	reqData.nodeInfo = JSON.stringify(nodeArray);
 	$.post('/create_graph',
-		{graphId: graph.id, parentNodeId: graph.parent.id, version: graph.version, 
-			student: graph.graphHistory.student.title, course_name: graph.graphHistory.project.course.title, 
-			course_year: graph.graphHistory.project.course.year, course_semester: graph.graphHistory.project.course.semester, 
-			description: "", nodes: nodeArray, edges: edgeArray},
+		reqData,
 		function(data, status) {
-		  console.log("Data: " + data + "\nStatus: " + status);
+			console.log("data: " + data);
+			var maxId = eval(data)[0].maxnodeid;
+			graph.id = eval(data)[0].newGraphId;
+			console.log("maxId: "  + maxId + " " + graph.id);
+			for(var i=0; i<graph.nodes.length; i++){
+				var node = graph.nodes[i];
+				if(node.id < 0){
+					node.id *= -1;
+					node.id += maxId;
+				}
+			}
+			uniqueID = -1;
 		});
 }
 

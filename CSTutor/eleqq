@@ -1,0 +1,15 @@
+             List of relations
+ Schema |       Name       | Type  | Owner  
+--------+------------------+-------+--------
+ public | course           | table | rimalp
+ public | edge             | table | rimalp
+ public | graph            | table | rimalp
+ public | node             | table | rimalp
+ public | professor        | table | rimalp
+ public | professor_course | table | rimalp
+ public | project          | table | rimalp
+ public | student          | table | rimalp
+ public | student_course   | table | rimalp
+ public | student_project  | table | rimalp
+(10 rows)
+
