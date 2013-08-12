@@ -208,6 +208,39 @@ app.post('/graph', function(req, res){
 		sendPostResponse(req, res, err, result);
 });
 
+//params:{}
+app.post('/allStudents', function(req, res){
+	client.query("SELECT * FROM student", function(err, result){
+		sendPostResponse(req, res, err, result);		
+	});
+});
+//params: {email, password}
+app.post('/validate_login', function(req, res){
+	database.validateLogin(req.body.username, req.body.password, function(err, result){
+		if(err){
+			res.writeHead(500, { 'Content-Type': 'text/plain' });
+			res.end("Error reading the database");
+		}else{
+			res.writeHead(200, { 'Content-Type': 'text/plain' });
+			res.end(JSON.stringify(result));
+		}
+	});
+});
+
+//params: {email, password, firstName, lastName}
+app.post('/register', function(req, res){
+	database.registerUser(req.body.email, req.body.password, req.body.firstName, req.body.lastName, req.body.isAdmin, function(err, result){
+		if(err){
+			res.writeHead(500, { 'Content-Type': 'text/plain' });
+			res.end("Error reading the database");
+		}else{
+			res.writeHead(200, { 'Content-Type': 'text/plain' });
+			res.end(JSON.stringify(result));
+		}
+	}
+});
+
+
 //for testing purposes
 app.post('/login', function(req, res){
 	var name = req.body.name;
@@ -299,7 +332,7 @@ var sendDeleteRequest = function(req, res, err, result){
 app.post('/delete_student', function(req, res){
 	database.deleteStudent(req.body.studentEmail, function(err, result){
 		sendDeleteRequest(req, res, err, result);
-	}
+	});
 });
 
 
@@ -307,28 +340,28 @@ app.post('/delete_student', function(req, res){
 app.post('/delete_course', function(req, res){
 	database.deleteCourse(req.body.courseName, req.body.courseYear, req.body.courseSemester, req.body.professorEmail, function(err, result){
 		sendDeleteRequest(req, res, err, result);
-	}
+	});
 });
 
 //params: {studentEmail, courseName, courseYear, courseSemester}
 app.post('/remove_student_course', function(req, res){
 	database.deleteStudentFromCourse(req.body.courseName, req.body.courseYear, req.body.courseSemester, req.body.studentEmail, function(err, result){
 		sendDeleteRequest(req, res, err, result);
-	}
+	});
 });
 
 //params: {projectName, courseName, courseYear, courseSemester}
 app.post('/delete_project', function(req, res){
 	database.deleteProject(req.body.projectName, req.body.courseName, req.body.courseYear, req.body.courseSemester, function(err, result){
 		sendDeleteRequest(req, res, err, result);
-	}
+	});
 });
 
 //params: {graphid}
 app.post('/delete_graph', function(req, res){
 	database.deleteGraph(req.body.graphId, function(err, result){
 		sendDeleteRequest(req, res, err, result);
-	}
+	});
 });
 
 console.log("database object created");
