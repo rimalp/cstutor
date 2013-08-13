@@ -206,6 +206,7 @@ app.post('/query', function(req, res){
 //get top level graphs for a course>lab>student. 
 //request body params: projectName, courseName, courseYear, courseSemester, studentEmail
 app.post('/graphs_top', function(req, res){
+	console.log("top graph");
 	database.getTopLevelGraphForLabForStudentForAllVersions(req.body.projectName, req.body.courseName, req.body.courseYear,
 		req.body.courseSemester, req.body.studentEmail, function(err, result){
 			//sendPostResponse(req, res, err, result);
@@ -220,6 +221,7 @@ app.post('/graphs_top', function(req, res){
 });
 //get sub-level graphs. request body params: nodeId (graph's parentNodeId if zooming out and simply nodeId if zooming in)
 app.post('/graph', function(req, res){
+	console.log("subgraph");
 	database.getSubGraphForNode(req.body.parentNodeId, function(err, result){
 		//sendPostResponse(req, res, err, result);
 		if(err){
@@ -261,7 +263,7 @@ app.post('/register', function(req, res){
 			res.writeHead(200, { 'Content-Type': 'text/plain' });
 			res.end(JSON.stringify(result));
 		}
-	}
+	});
 });
 
 
@@ -343,12 +345,14 @@ app.post('/create_graph', function(req, res){
 });
 
 app.post('/create_node', function(req, res){
+	console.log("create node");
 	database.createNode(req.body.nodeInfo, function(err, result){
 		sendPutRequest(req, res, err, result);
 	});
 });
 
 app.post('/update_node', function(req, res){
+	console.log("update node");
 	database.updateNode(req.body.nodeInfo, function(err, result){
 		sendPutRequest(req, res, err, result);
 	});
@@ -362,7 +366,7 @@ app.post('/delete_node', function(req, res){
 
 app.post('/create_edge', function(req, res){
 	database.createEdge(req.body.edgeInfo, function(err, result){
-		sendRequest(req, res, err, result);
+		sendPutRequest(req, res, err, result);
 	});
 });
 

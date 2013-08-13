@@ -250,6 +250,7 @@ Node.prototype = {
 				this.edges.splice(this.edges.indexOf(current), 1);
 				node.edges.splice(node.edges.indexOf(current), 1);
 				this.graph.edges.splice(this.graph.edges.indexOf(current), 1);
+				deleteEdge(current);
 			}
 		}
 	},
@@ -342,7 +343,8 @@ Node.prototype = {
 		var edge = new Edge(this, node);//this.r.connection(this.bottom, node.top, {directed: true});
 		this.edges[this.edges.length] = edge;
 		node.edges[node.edges.length] = edge;
-		this.graph.edges[this.graph.edges.length] = edge;
+		this.graph.edges[this.graph.edges.length] = edge;	
+		createEdge(edge);
 		return edge;
 	},
 	drawEdges: function(){
@@ -378,6 +380,7 @@ Node.prototype = {
 		
 		return function(e){
 			if(!focusNode.subgraph ||focusNode.subgraph.contains(selfRef.id)){
+				console.log("double clicked");
 				focusNode = selfRef;
 				centerX = selfRef.body.attr('cx');	
 				centerY = selfRef.body.attr('cy');
@@ -594,18 +597,21 @@ Graph.prototype = {
 		}
 		cloneGraph.version = version || this.version+1;
 		cloneGraph.parent = owner;
+		createGraph(cloneGraph);
 		
 		for(var i=0; i<this.nodes.length; i++){
 			var current = this.nodes[i];
 			var cloneNode = new Node(current.data, current.description);
-			cloneNode.id = -i - 1;
+			cloneNode.id = -1;
 			cloneNode.setAppearence(current.x, current.y, current.radius);
 			cloneNode.color = current.color;
 			cloneNode.owner = owner;
-			//if(current.subgraph != false){
-			//	cloneNode.subgraph = current.subgraph.clone(cloneNode, cloneGraph.version);
-			//}
 			cloneGraph.addNode(cloneNode);
+			createNode(cloneNode);
+			
+			if(current.subgraph != false){
+				cloneNode.subgraph = current.subgraph.clone(cloneNode, cloneGraph.version);
+			}
 		}
 		for(var i=0; i<this.nodes.length; i++){
 			var current = this.nodes[i];
@@ -616,15 +622,9 @@ Graph.prototype = {
 			}
 		}
 		
-		var self = this;
-		updateGraph(cloneGraph, function(){
-			for(var i=0; i<self.nodes.length; i++){
-				var current = self.nodes[i];
-				if(current.subgraph != false){
-					cloneGraph.nodes[i].subgraph = current.subgraph.clone(cloneGraph.nodes[i], cloneGraph.version);
-				}
-			}
-		});
+		for(var i=0; i<cloneGraph.edges.length; i++){
+			createEdge(cloneGraph.edges[i]);
+		}
 		
 		return cloneGraph;
 	},
