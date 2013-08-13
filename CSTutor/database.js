@@ -700,7 +700,7 @@ Database.prototype = {
 					result.rows[0].isAdmin = false;
 					callback(null, result);
 				}else{
-					client.query("SELECT * FROM professor WHERE email='"+email"'", function(err, result){
+					client.query("SELECT * FROM professor WHERE email='"+email+"'", function(err, result){
 						if(err) callback(err);
 						else{
 							if(result.rowCount == 1){
@@ -712,43 +712,44 @@ Database.prototype = {
 								callback(null, result);
 							}
 						}
-					}
+					});
 				}
 			}
 		});
 	},
 	
 	registerUser: function(email, password, firstName, lastName, isAdmin, callback){
-		if(isAdmin){
-			client.query("SELECT count(email) FROM professor WHERE email=$1", [email], function(err, result){
-					if(err) callback(err);
+		// isAdmin always false for now
+		if(isAdmin == true){
+			client.query("SELECT * FROM professor WHERE email=$1", [email], function(err, result){
+					if(err) return callback(err);
 					else if(result.rowCount == 0){
 						client.query("INSERT INTO professor VALUES($1,$2,$3,$4)",[email, firstName, lastName, password], function(err, result){
 							if(err) callback(err);
 							else{
 								result.newUser = true;
-								callback(null, result);
+								return callback(null, result);
 							}
-						}
+						});
 					}else{
 						result.newUser = false;
-						callback(null, result);
+						return callback(null, result);
 					}
 				});
 		}else{
-			client.query("SELECT count(email) FROM student WHERE email=$1", [email], function(err, result){
-					if(err) callback(err);
+			client.query("SELECT * FROM student WHERE email=$1", [email], function(err, result){
+					if(err) return callback(err);
 					else if(result.rowCount == 0){
 						client.query("INSERT INTO student VALUES($1,$2,$3,$4)",[email, firstName, lastName, password], function(err, result){
 							if(err) callback(err);
 							else{
 								result.newUser = true;
-								callback(null, result);
+								return callback(null, result);
 							}
-						}
+						});
 					}else{
 						result.newUser = false;
-						callback(null, result);
+						return callback(null, result);
 					}
 				});
 		}
