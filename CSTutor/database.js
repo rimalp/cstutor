@@ -109,6 +109,30 @@ Database.prototype = {
 				}
 			});
 	},
+	
+	getPromptsForProject: function(projectName, courseName, courseYear, courseSemester, callback){
+		client.query("SELECT id, text, requiresInput, eventType, frequency FROM prompt WHERE prompt.projectName=$1 AND prompt.courseName=$2 AND prompt.courseYear=$3 AND prompt.courseSemester=$4 ",
+			[projectName, courseName, courseYear, courseSemester], function(err, result){
+				if(err){
+					callback(err);
+				}else{
+					callback(null, result);
+				}
+		});
+	},
+	
+	createPrompt: function(projectName, courseName, courseYear, courseSemester, text, requiresInput, eventType, frequency, callback){
+		client.query("INSERT INTO prompt (projectName, courseName, courseYear, courseSemester, text, requiresInput, eventType, frequency) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id",
+			[projectName, courseName, courseYear, courseSemester, text, requiresInput, eventType, frequency],
+			function(err, result){
+				if(err){
+					callback(err);
+				}
+				else{
+					callback(null, result);
+				}
+		});
+	},
 
 	//get a list of top level graphs for a given project and student
 	/*	This method returns a JSON string where it contains arrays of objects with three parameters - graphInfo, nodesInfo and edgesInfo
@@ -419,6 +443,20 @@ Database.prototype = {
 			if(err){
 				callback(err);
 			}
+			else{
+				callback(null, {rows: []});
+			}
+		});
+	},
+	
+	deleteEdge: function(edgeInfo, callback){
+		client.query("DELETE FROM edge WHERE graphId=$1 AND src=$2 AND dst=$3", [edgeInfo.graphId, edgeInfo.sourceNode, edgeInfo.destNode], function(err){
+			if(err){
+				callback(err);
+			}
+			else{
+				callback(null, {rows: []});
+			}
 		});
 	},
 	
@@ -427,6 +465,10 @@ Database.prototype = {
 			"WHERE id=$1", [node.id, node.x, node.y, node.name, node.description, node.color], function (err){
 				if(err){
 					callback(err);
+				}
+				else{
+					callback(null, {rows: []});
+					console.log("DONE UPDATING");
 				}
 			});
 	},

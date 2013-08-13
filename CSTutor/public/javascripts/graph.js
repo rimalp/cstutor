@@ -30,7 +30,7 @@ var onload = function(){
 			if(focusNode){
 				console.log("update graph");
 				//updateGraph(currentGraph);
-			
+				
 				focusNode.contract();
 				currentGraph = focusNode.graph;
 				focusNode = focusNode.owner;
@@ -250,6 +250,7 @@ Node.prototype = {
 				this.edges.splice(this.edges.indexOf(current), 1);
 				node.edges.splice(node.edges.indexOf(current), 1);
 				this.graph.edges.splice(this.graph.edges.indexOf(current), 1);
+				deleteEdge(current);
 			}
 		}
 	},
@@ -330,6 +331,7 @@ Node.prototype = {
 		return function(){
 			if(this.responsive)
 				this.animate({"fill-opacity": .8}, 500);
+			
 			if(Raphael.isBBoxIntersect(trashcan.getBBox(), this.getBBox())){
 				selfRef.remove();
 			}
@@ -342,7 +344,8 @@ Node.prototype = {
 		var edge = new Edge(this, node);//this.r.connection(this.bottom, node.top, {directed: true});
 		this.edges[this.edges.length] = edge;
 		node.edges[node.edges.length] = edge;
-		this.graph.edges[this.graph.edges.length] = edge;
+		this.graph.edges[this.graph.edges.length] = edge;	
+		createEdge(edge);
 		return edge;
 	},
 	drawEdges: function(){
@@ -378,6 +381,7 @@ Node.prototype = {
 		
 		return function(e){
 			if(!focusNode.subgraph ||focusNode.subgraph.contains(selfRef.id)){
+				console.log("double clicked");
 				focusNode = selfRef;
 				centerX = selfRef.body.attr('cx');	
 				centerY = selfRef.body.attr('cy');
@@ -414,14 +418,17 @@ Node.prototype = {
 			this.graph.edges[i].arrow.animate({"fill-opacity": 0, "stroke-opacity": 0}, 500);
 		}
 		
-		this.body.animate({r: 1000, "fill-opacity": .1}, 1000);
+		var tempCircle = r.circle(this.x, this.y, this.radius).attr({fill: this.color, "fill-opacity": .8, stroke: this.color});
+		tempCircle.animate({r: 1000, "fill-opacity": .1}, 1000);
+		this.body.remove();//animate({r: 1000, "fill-opacity": .1}, 1000);
 		this.bottom.remove();
 		this.text.remove();
 		
 		//show new graph
 		var selfRef = this;
 		setTimeout(function(){
-			background.attr({fill: selfRef.body.attr("fill"), stroke: selfRef.body.attr("stroke"), "fill-opacity": selfRef.body.attr("fill-opacity")});
+			background.attr({fill: tempCircle.attr("fill"), stroke: tempCircle.attr("stroke"), "fill-opacity": tempCircle.attr("fill-opacity")});
+			tempCircle.remove();
 			selfRef.body.remove();
 			selfRef.graph.hide();
 			selfRef.subgraph.show();
@@ -432,11 +439,13 @@ Node.prototype = {
 		if(arguments.length == 0)
 			time = 1000;
 		
-		this.show();
+		/*this.show();
 		this.bottom.hide();
 		this.text.hide();
 		this.body.attr({r: 1000, "fill-opacity": .1});
-		this.body.animate({r: this.radius, "fill-opacity": .8}, time);
+		this.body.animate({r: this.radius, "fill-opacity": .8}, time);*/
+		var tempCircle = r.circle(this.x, this.y, 1000).attr({fill: this.color, "fill-opacity": .1, stroke: this.color});
+		tempCircle.animate({r: this.radius, "fill-opacity": .8}, time);
 		setTimeout(updateMiniMap, time+100);
 		
 		
@@ -454,8 +463,9 @@ Node.prototype = {
 		//show new graph
 		var selfRef = this;
 		var func = function(){
-				currentGraph.hide();
+				selfRef.subgraph.hide();
 				selfRef.graph.show();
+				tempCircle.remove();
 				if(!selfRef.owner)
 					background.attr({fill: "white", stroke: "black"});
 				else{
@@ -470,8 +480,6 @@ Node.prototype = {
 	hide: function(){
 		if(this.body)
 			this.body.remove();
-		if(this.top)
-			this.top.remove();
 		if(this.bottom)
 			this.bottom.remove();
 		if(this.text)
@@ -556,15 +564,15 @@ Graph.prototype = {
 	
 	//GUI Functions
 	show: function(){
-		for(i in this.nodes)
+		for(var i=0; i<this.nodes.length; i++)
 			this.nodes[i].show();
-		for(i in this.edges)
+		for(var i=0; i<this.edges.length; i++)
 			this.edges[i].show();
 	},
 	hide: function(){
-		for(i in this.nodes)
+		for(var i=0; i<this.nodes.length; i++)
 			this.nodes[i].hide();
-		for(i in this.edges)
+		for(var i=0; i<this.edges.length; i++)
 			this.edges[i].hide();
 	},
 	drawEdges: function(){
@@ -594,18 +602,21 @@ Graph.prototype = {
 		}
 		cloneGraph.version = version || this.version+1;
 		cloneGraph.parent = owner;
+		createGraph(cloneGraph);
 		
 		for(var i=0; i<this.nodes.length; i++){
 			var current = this.nodes[i];
 			var cloneNode = new Node(current.data, current.description);
-			cloneNode.id = -i - 1;
+			cloneNode.id = -1;
 			cloneNode.setAppearence(current.x, current.y, current.radius);
 			cloneNode.color = current.color;
 			cloneNode.owner = owner;
-			//if(current.subgraph != false){
-			//	cloneNode.subgraph = current.subgraph.clone(cloneNode, cloneGraph.version);
-			//}
 			cloneGraph.addNode(cloneNode);
+			createNode(cloneNode);
+			
+			if(current.subgraph != false){
+				cloneNode.subgraph = current.subgraph.clone(cloneNode, cloneGraph.version);
+			}
 		}
 		for(var i=0; i<this.nodes.length; i++){
 			var current = this.nodes[i];
@@ -616,15 +627,9 @@ Graph.prototype = {
 			}
 		}
 		
-		var self = this;
-		updateGraph(cloneGraph, function(){
-			for(var i=0; i<self.nodes.length; i++){
-				var current = self.nodes[i];
-				if(current.subgraph != false){
-					cloneGraph.nodes[i].subgraph = current.subgraph.clone(cloneGraph.nodes[i], cloneGraph.version);
-				}
-			}
-		});
+		for(var i=0; i<cloneGraph.edges.length; i++){
+			createEdge(cloneGraph.edges[i]);
+		}
 		
 		return cloneGraph;
 	},

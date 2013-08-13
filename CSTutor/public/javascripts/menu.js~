@@ -153,6 +153,7 @@ GraphHistory.prototype.addResponse = function(response){
 };
 
 var Prompt = function(text, requiresInput, eventType, frequency/*optional*/){
+	this.id = -1;
 	this.text = text;
 	this.requiresInput = requiresInput;
 	this.eventType = eventType;	//version, save, frequency
@@ -179,7 +180,7 @@ var Response = function(prompt){
 }
 
 var courses = new Array();
-getCoursesForStudent({title: 'kellerj@lafayette.edu'}, 
+getCoursesForStudent({title: 'kellerj@lafayette.edu'},
 function(data, status){
 	var response = eval(data);
 	for(var i=0; i<response.length; i++){
@@ -189,10 +190,10 @@ function(data, status){
 		courses[i] = course;
 		
 		//get projects
-		getProjectsForCourse(course, getProjectsForCourseCallback(course/*, i==response.length-1*/));
+		getProjectsForCourse(course, getProjectsForCourseCallback(course));
 		
 		//get students
-		getStudentsForCourse(course, getStudentsForCourseCallback(course/*, i==response.length-1*/));
+		getStudentsForCourse(course, getStudentsForCourseCallback(course));
 	}
 });
 
@@ -201,16 +202,8 @@ function getProjectsForCourseCallback(course/*, last*/){
 			var response = eval(data);
 			for(var i=0; i<response.length; i++){
 				var project = new Project(response[i].name, course);
+				getPromptsForProject(project);
 			}
-			/*if(last){
-				for(var i=0; i<course.projects.length; i++){
-					var project = course.projects[i];
-					for(var j=0; j<course.students.length; j++){
-						var student = course.students[i];
-						
-					}
-				}
-			}*/
 		};
 }
 
@@ -400,7 +393,11 @@ function displayNewProject(course, project, back){
 	var promptDiv = document.createElement("div");
 	var newQuestion = document.createElement("a");
 	newQuestion.innerHTML = "New Prompt/Question...";
-	newQuestion.onclick = function(){promptArray[promptArray.length] = new Prompt("", false, "version"); addNewPrompt(promptArray, promptArray.length-1, promptDiv)};
+	newQuestion.onclick = function(){
+		var newPrompt = new Prompt("", false, "version");
+		promptArray[promptArray.length] = newPrompt;
+		addNewPrompt(promptArray, promptArray.length-1, promptDiv);
+	};
 	promptDiv.appendChild(newQuestion);
 	
 	for(var i=0; i<promptArray.length; i++){
@@ -416,6 +413,12 @@ function displayNewProject(course, project, back){
 						project.prompts = promptArray;
 					}
 					else{
+						for(var i=0; i<project.prompts.length; i++){
+							var currentPrompt = project.prompts[i];
+							if(currentPrompt.id <= 0){
+								createPrompt(currentPrompt, project);
+							}
+						}
 						project.title = titleInput.value;
 					}
 					backButtonStack[backButtonStack.length-2].firstChild.onclick();//simulate back button click
@@ -665,8 +668,8 @@ function newGraphFunction(){
 	}
 	else{
 		newGraph = new Graph();
-		createGraph(newGraph);
 		currentGraphHistory.addGraph(newGraph);
+		createGraph(newGraph);
 	}
 	showGraph(newGraph);
 	currentProject.executeNewVersionPrompts(currentStudent);
