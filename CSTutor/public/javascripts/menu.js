@@ -551,6 +551,7 @@ function displayDetail(courses){
 	getInfoBoxes("", courses, courseDiv, coursesToCourseOnClickMaker, function(){return "";});
 	
 	detail_view.appendChild(courseDiv);
+	
 }
 
 function displayDetailCourse(course, back){
@@ -568,6 +569,7 @@ function displayDetailCourse(course, back){
 	
 	detail_view.appendChild(projectDiv);
 	detail_view.appendChild(studentDiv);
+
 }
 
 function displayDetailProject(project, back){

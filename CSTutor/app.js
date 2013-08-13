@@ -242,7 +242,7 @@ app.post('/allStudents', function(req, res){
 });
 //params: {email, password}
 app.post('/validate_login', function(req, res){
-	database.validateLogin(req.body.username, req.body.password, function(err, result){
+	database.validateLogin(req.body.email, req.body.password, function(err, result){
 		if(err){
 			res.writeHead(500, { 'Content-Type': 'text/plain' });
 			res.end("Error reading the database");
