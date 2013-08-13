@@ -17,17 +17,85 @@ function getStudentsForCourse(course, callback){
 		callback);
 }
 
-function getTopLevelGraphsForStudentProject(course, project, student, callback){
+function getTopLevelGraphsForStudentProject(course, project, student, displayFunction){
 	$.post('/graphs_top',
 		{projectName : project.title, courseName: course.title, courseYear: course.year, courseSemester: course.semester, studentEmail: student.title},
-		callback);
+		function(data, status){
+			console.log("Data: " + data);
+			var response = eval(data);
+			for(var j=0; j<response.length; j++){
+				var graphInfo = response[j].graphInfo;
+				var nodeInfo = response[j].nodeInfo;
+				var edgeInfo = response[j].edgeInfo;
+			
+				var graph = new Graph();
+				graph.id = graphInfo.id;
+				graph.parent = false;
+				graph.version = graphInfo.version;
+			
+				for(var i=0; nodeInfo && i<nodeInfo.length; i++){
+					var node = new Node(nodeInfo[i].name, nodeInfo[i].description);
+					console.log("nodeinfo: " + JSON.stringify(nodeInfo[i]));
+					node.id = nodeInfo[i].id;
+					node.x = nodeInfo[i].x;
+					node.y = nodeInfo[i].y;
+					node.color = nodeInfo[i].color;
+					graph.addNode(node);
+				}
+			
+				for(var i=0; edgeInfo && i<edgeInfo.length; i++){
+					var source = graph.getNodeWithId(edgeInfo[i].src);
+					var destination = graph.getNodeWithId(edgeInfo[i].dst);
+					if(source && destination)
+						source.addChild(destination);
+				}
+				student.getGraphHistoryOf(project).addGraph(graph);
+			}
+			uniqueID = -1;
+			displayFunction();
+		});
 }
 
-function getSubGraph(parentNode){
+function getSubGraph(parentNode, project, student, displayFunction){
 	$.post('/graph',
 		{parentNodeId: parentNode.id},
-		function(data, status) {
-		  console.log("Data: " + data + "\nStatus: " + status);
+		function(data, status){
+			console.log("subgraph Data: " + data);
+			var response = eval("[" + data + "]"); //got invalid label error if data wasn't an array
+			console.log(response.length);
+			for(var j=0; j<response.length; j++){
+				var graphInfo = response[j].graphInfo;
+				//console.log(JSON.stringify(graphInfo));
+				var nodeInfo = response[j].nodeInfo;
+				var edgeInfo = response[j].edgeInfo;
+			
+				var graph = new Graph();
+				graph.id = (graphInfo) ? (graphInfo.id || -1) : -1;
+				console.log("Graph id: " + graph.id);
+				graph.parent = parentNode;
+				graph.version = parentNode.graph.version;
+			
+				for(var i=0; nodeInfo && i<nodeInfo.length; i++){
+					var node = new Node(nodeInfo[i].name, nodeInfo[i].description);
+					console.log("nodeinfo: " + JSON.stringify(nodeInfo[i]));
+					node.id = nodeInfo[i].id;
+					node.x = nodeInfo[i].x;
+					node.y = nodeInfo[i].y;
+					node.color = nodeInfo[i].color;
+					graph.addNode(node);
+				}
+			
+				for(var i=0; edgeInfo && i<edgeInfo.length; i++){
+					var source = graph.getNodeWithId(edgeInfo[i].src);
+					var destination = graph.getNodeWithId(edgeInfo[i].dst);
+					if(source && destination)
+						source.addChild(destination);
+				}
+				parentNode.subgraph = graph;
+				if(graph.id < 0)
+					createGraph(graph);
+				displayFunction();
+			}
 		});
 }
 
@@ -73,15 +141,71 @@ function createProject(project, course){
 		});
 }
 
-function runQuery(q){
-	$.post('/query',
-		{query: q},
+function createNode(node){
+	console.log("graphid: " + node.graph.id);
+	var nodeInfo = {x: Math.round(node.x), y: Math.round(node.y), graphId: node.graph.id, name: node.data, description: node.description, color: node.color, deleted: false};
+	$.post('/create_node',
+		{"nodeInfo": nodeInfo},
 		function(data, status) {
-		  console.log("Data: " + data + "\nStatus: " + status);
-		});
+			var response = eval(data);
+			node.id = response[0].id;
+			console.log("data: " + data);
+	});
 }
 
-function updateGraph(graph){
+function updateNode(node){
+	var nodeInfo = {id: node.id, x: Math.round(node.x), y: Math.round(node.y), graphId: node.graph.id, name: node.data, description: node.description, color: node.color};
+	$.post('/update_node',
+		{"nodeInfo": nodeInfo},
+		function(data, status) {
+			console.log("data: " + data);
+	});
+}
+
+function deleteNode(node){
+	var nodeInfo = {id: node.id};
+	$.post('/delete_node',
+		{"nodeInfo": nodeInfo},
+		function(data, status) {
+			console.log("data: " + data);
+	});
+}
+
+function createEdge(edge){
+	var edgeInfo = {sourceNode: edge.sourceNode.id, destNode: edge.destNode.id, graphId: edge.sourceNode.graph.id};
+	$.post('/create_edge',
+		{"edgeInfo": edgeInfo},
+		function(data, status) {
+			console.log("data: " + data);
+	});
+}
+
+function createGraph(graph){
+	//get top level graph
+	var currentGraph = graph;
+	while(currentGraph.parent){
+		currentGraph = currentGraph.parent.graph;
+	}
+	var topLevelGraphHistory = currentGraph.graphHistory;
+	
+	var reqData = {};
+	reqData.studentEmail = topLevelGraphHistory.student.title;
+	reqData.courseName = topLevelGraphHistory.project.course.title;
+	reqData.courseYear = topLevelGraphHistory.project.course.year;
+	reqData.courseSemester = topLevelGraphHistory.project.course.semester;
+	reqData.projectName = topLevelGraphHistory.project.title;
+	reqData.graphInfo = {id: graph.id, parentNodeId: graph.parent ? graph.parent.id : -1, version: graph.version, description: "No description"};
+	
+	$.post('/create_graph',
+		reqData,
+		function(data, status) {
+			console.log("data: " + data);
+			var response = eval(data);
+			graph.id = response[0].id;
+	});
+}
+
+function updateGraph(graph, delayedCallback){
 	var nodeArray = new Array();
 	for(var i=0; i<graph.nodes.length; i++){
 		var node = graph.nodes[i];
@@ -131,6 +255,8 @@ function updateGraph(graph){
 				}
 			}
 			uniqueID = -1;
+			if(delayedCallback)
+				delayedCallback();
 		});
 }
 

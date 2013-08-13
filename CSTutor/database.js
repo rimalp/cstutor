@@ -190,25 +190,31 @@ Database.prototype = {
 				return(err);
 			}else{
 				var graph = {};
-				graph.graphInfo = result.rows;
-				//get the nodes for the graph
-				client.query("SELECT * FROM node WHERE graphId=$1", [parentNodeId], function(err, result){
-					if(err){
-						callback(err);
-					}else{
-						graph.nodeInfo = result.rows;
-						//also fetch all the edges
-						client.query("SELECT * from edge WHERE graphId=$1", [parentNodeId], function(err, result){
-							if(err){
-								callback(err);
-							}else{
-								graph.edgeInfo = result.rows;
-								console.log("Graph: " + JSON.stringify(graph));
-								callback(null, graph);
-							}
-						});
-					}
-				});
+				if(result.rows.length > 0){
+					graph.graphInfo = result.rows[0];
+					//get the nodes for the graph
+					client.query("SELECT * FROM node WHERE graphId=$1", [graph.graphInfo.id], function(err, result){
+						if(err){
+							callback(err);
+						}else{
+							graph.nodeInfo = result.rows;
+							//also fetch all the edges
+							client.query("SELECT * from edge WHERE graphId=$1", [graph.graphInfo.id], function(err, result){
+								if(err){
+									callback(err);
+								}else{
+									graph.edgeInfo = result.rows;
+									console.log("Graph: " + JSON.stringify(graph));
+									callback(null, graph);
+								}
+							});
+						}
+					});
+				}
+				else{
+					console.log("no subgraph");
+					callback(null, graph);
+				}
 
 			}
 		});
@@ -376,11 +382,60 @@ Database.prototype = {
 			}
 		});
 	},
+	createNode: function(nodeInfo, callback){
+		client.query("INSERT INTO node(x, y, graphId, name, description, color) VALUES($1,$2,$3,$4,$5,$6) RETURNING id",
+		[nodeInfo.x, nodeInfo.y, nodeInfo.graphId, nodeInfo.name, nodeInfo.description, nodeInfo.color], function(err, result){
+			if(err){
+				callback(err);
+			}
+			else{
+				callback(null, result);
+			}
+		});
+	},
+	
+	createGraph: function(graphInfo, studentEmail, courseName, courseYear, courseSemester, projectName, callback){
+		client.query("INSERT INTO graph (parentNodeId, version, description) VALUES($1,$2,$3) RETURNING id", 
+			[graphInfo.parentNodeId, graphInfo.version, graphInfo.description], function(err, result){
+				if(err){
+					callback(err);
+				}else{
+					var graphId = result.rows[0].id;
+					client.query("INSERT INTO student_project VALUES($1,$2,$3,$4,$5,$6)",
+						[projectName, courseName, courseYear, courseSemester, studentEmail, graphId], function(err){
+							if(err){
+								callback(err);
+							}
+							else{
+								callback(null, result);
+							}
+					});
+				}
+		});
+	},
+	
+	createEdge: function(edgeInfo, callback){
+		client.query("INSERT INTO edge VALUES($1, $2, $3)", [edgeInfo.sourceNode, edgeInfo.destNode, edgeInfo.graphId], function(err){
+			if(err){
+				callback(err);
+			}
+		});
+	},
+	
+	updateNode: function(node, callback){
+		client.query("UPDATE node SET id=$1, x=$2, y=$3, name=$4, description=$5, color=$6 "+
+			"WHERE id=$1", [node.id, node.x, node.y, node.name, node.description, node.color], function (err){
+				if(err){
+					callback(err);
+				}
+			});
+	},
+	
 	//new graphs have id of -ve, all nodes and edges in such a graph are new too
 	//existing graph id > 0 
 	//new node id = -ve id value, existing node id >1, deleted node.deleted = true;
 	//for edges, if updating a graph, delete all first then enter them again since they dont have int ids
-	createGraph: function(graphInfo, nodeInfo, edgeInfo, studentEmail, courseName, courseYear, courseSemester, projectName, callback){
+	/*createGraph: function(graphInfo, nodeInfo, edgeInfo, studentEmail, courseName, courseYear, courseSemester, projectName, callback){
 		var shouldReturn = false;
 		console.log("graphInfo.id: " + graphInfo.id);
 		if(graphInfo.id < 0){
@@ -424,7 +479,8 @@ Database.prototype = {
 									});
 								}
 								for(var i=0; i<edgeInfo.length; i++){
-									edge = edgeInfo[i];
+									var edge = edgeInfo[i];
+									console.log(((-1)*edge.sourceNode+nodeMaxId) + " " + ((-1)*edge.destNode+nodeMaxId));
 									client.query("INSERT INTO edge VALUES($1, $2, $3)", [(-1)*edge.sourceNode+nodeMaxId, (-1)*edge.destNode+nodeMaxId, newGraphId], function(err){
 										if(err){
 											callback(err);
@@ -490,30 +546,28 @@ Database.prototype = {
 								if(shouldReturn)
 									return;
 
-									//also delete and add the edges after the last one of the nodes are done with
+								//also delete and add the edges after the last one of the nodes are done with
 								client.query("DELETE FROM edge WHERE graphId=$1",[graphId], function(err){
 									if(err){
 										callback(err);
 									}else{
-
 										//reinsert all the edges
-										if(edgeInfo.length == 0){ 
-											console.log("edge length zero: ");										
-											//return updateGraphHelper(projectName, courseName, courseYear, courseSemester, studentEmail, newGraphId, callback);}
-											for(var j=0; j<edgeInfo.length; j++){
-												if(j == 0){
-													client.query('SELECT NOW() AS "theTime"', function(){updateGraphHelper(projectName, courseName, courseYear, courseSemester, studentEmail, newGraphId, callback);});
-												}
-												client.query("INSERT INTO edge VALUES($1,$2,$3)",
-													[edgeInfo.sourceId<0 ? (-1)*edgeInfo.sourceId+nodeMaxId: edgeInfo.sourceId, edgeInfo.destinationId<0 ? (-1)*edgeInfo.destinationId+nodeMaxId: edgeInfo.destinationId, edgeInfo.graphId], function(err){
-														if(err){
-															callback(err);
-														}
-								
-													});
-											}
+										console.log(JSON.stringify(edgeInfo));
+										//return updateGraphHelper(projectName, courseName, courseYear, courseSemester, studentEmail, newGraphId, callback);}
+										for(var j=0; j<edgeInfo.length; j++){
+											console.log("edgeInfo: " + JSON.stringify(edgeInfo[j]));
+											var sourceId = edgeInfo[j].sourceNode<0 ? (-1)*edgeInfo[j].sourceNode+nodeMaxId: edgeInfo[j].sourceNode;
+											var destId = edgeInfo[j].destNode<0 ? (-1)*edgeInfo[j].destNode+nodeMaxId: edgeInfo[j].destNode;
+											console.log("source: " + sourceId + ", destId: " + destId);
+											client.query("INSERT INTO edge VALUES($1,$2,$3)",
+												[sourceId, destId, graphId], function(err){
+													if(err){
+														callback(err);
+													}
+												});
 										}
 									}
+									//client.query('SELECT NOW() AS "theTime"', function(){updateGraphHelper(projectName, courseName, courseYear, courseSemester, studentEmail, graphId, callback);});
 								});
 							}
 						});
@@ -525,7 +579,7 @@ Database.prototype = {
 		
 		if(shouldReturn)
 			return;
-	},
+	},*/
 
 	deleteGraph: function(id, callback){
 		client.query("DELETE FROM graph WHERE id=$1", [id], function(err){
@@ -538,11 +592,12 @@ Database.prototype = {
 		});
 	},
 	deleteNode: function(id, callback){
+		var self = this;
 		client.query("DELETE FROM node WHERE id=$1", [id], function(err){
 			if(err){
 				callback(err);
 			}else{
-				this.deleteGraphWithParentNode(id, function(err){
+				self.deleteGraphWithParentNode(id, function(err){
 					if(err){
 						callback(err);
 					}else{
@@ -554,16 +609,17 @@ Database.prototype = {
 	},
 
 	deleteGraphWithParentNode: function(parentNodeId, callback){
-		client.query("DELETE FROM graph WHERE parentNodeId=$1 returning id returning id",[parentNodeId], function(err, result){
+		client.query("DELETE FROM graph WHERE parentNodeId=$1 RETURNING id",[parentNodeId], function(err, result){
 			var graphId = -1;
 			if(err){
 				callback(err);
-			}else if(result.rows.rowCount == 0){
+			}else if(result.rows.length == 0){
 				callback(null);
 			}else{
+				console.log("delete graph: " + JSON.stringify(result.rows));
 				var graphId = result.rows[0].id;
 				//get the ids of all the nodes in the deleted graph and delete them too, returning their ids
-				client.query("DELTE FROM edge WHERE graphId=$1",[graphId], function(err){
+				client.query("DELETE FROM edge WHERE graphId=$1",[graphId], function(err){
 					
 					if(err){
 						callback(err);

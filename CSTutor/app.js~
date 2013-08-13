@@ -221,7 +221,14 @@ app.post('/graphs_top', function(req, res){
 //get sub-level graphs. request body params: nodeId (graph's parentNodeId if zooming out and simply nodeId if zooming in)
 app.post('/graph', function(req, res){
 	database.getSubGraphForNode(req.body.parentNodeId, function(err, result){
-		sendPostResponse(req, res, err, result);
+		//sendPostResponse(req, res, err, result);
+		if(err){
+			res.writeHead(500, { 'Content-Type': 'text/plain' });
+			res.end("Error reading the database");
+		}else{
+			res.writeHead(200, { 'Content-Type': 'text/plain' });
+			res.end(JSON.stringify(result));
+		}
 	});
 });
 
@@ -291,9 +298,43 @@ app.put('/create_project', function(req, res){
 
 //params: graph { graphInfo{...}, nodeInfo{[x, y, ...., deleted(boolean), ...] }, edgeInfo{ array of edges ...}, studentEmail, courseName, courseYear, courseSemester, projectName}
 app.post('/create_graph', function(req, res){
-	console.log("req.body.edgeInfo: " + JSON.stringify(eval(req.body.edgeInfo)));
+	/*console.log("req.body: " + JSON.stringify(req.body));
 	database.createGraph(req.body.graphInfo, eval(req.body.nodeInfo), eval(req.body.edgeInfo), req.body.studentEmail, req.body.courseName, req.body.courseYear, req.body.courseSemester, 
 	 req.body.projectName, function(err, result){
+		console.log("CALLBACK CALLED");
+		sendPutRequest(req, res, err, result);
+	});*/
+	database.createGraph(req.body.graphInfo, req.body.studentEmail, req.body.courseName, req.body.courseYear, req.body.courseSemester, req.body.projectName, function(err, result){
+		sendPutRequest(req, res, err, result);
+	});
+});
+
+app.post('/create_node', function(req, res){
+	database.createNode(req.body.nodeInfo, function(err, result){
+		sendPutRequest(req, res, err, result);
+	});
+});
+
+app.post('/update_node', function(req, res){
+	database.updateNode(req.body.nodeInfo, function(err, result){
+		sendPutRequest(req, res, err, result);
+	});
+});
+
+app.post('/delete_node', function(req, res){
+	database.deleteNode(req.body.nodeInfo, function(err, result){
+		sendPutRequest(req, res, err, result);
+	});
+});
+
+app.post('/create_edge', function(req, res){
+	database.createEdge(req.body.edgeInfo, function(err, result){
+		sendRequest(req, res, err, result);
+	});
+});
+
+app.post('/delete_edge', function(req, res){
+	database.deleteEdge(req.body.nodeInfo, function(err, result){
 		sendPutRequest(req, res, err, result);
 	});
 });

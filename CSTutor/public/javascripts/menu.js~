@@ -614,13 +614,12 @@ function displayDetailStudent(student, course, back){
 	detail_view.appendChild(projectDiv);
 }
 
-var loadedGraphs = false;
 function displayDetailStudentProject(student, project, back){
 	clearDetailView();
 	showDetailView();
 	
 	if(!back)
-		backButtonStack.push(getButtonDiv(student.title + "'s " + project.title, function(){backButtonStack.pop(); displayDetailStudentProject(student, project, true); updateGraph(currentGraph);}));
+		backButtonStack.push(getButtonDiv(student.title + "'s " + project.title, function(){backButtonStack.pop(); displayDetailStudentProject(student, project, true); /*updateGraph(currentGraph);*/}));
 	setTitle(student.title + "'s " + project.title, backButtonStack[backButtonStack.length-2]);
 	
 	var displayFunction = function(){
@@ -650,42 +649,8 @@ function displayDetailStudentProject(student, project, back){
 		detail_view.appendChild(promptDiv);
 	};
 	
-	if(!loadedGraphs){
-		getTopLevelGraphsForStudentProject(project.course, project, student,
-			function(data, status){
-				console.log("Data: " + data);
-				var response = eval(data);
-				for(var j=0; j<response.length; j++){
-					var graphInfo = response[j].graphInfo;
-					var nodeInfo = response[j].nodeInfo;
-					var edgeInfo = response[j].edgeInfo;
-				
-					var graph = new Graph();
-					graph.id = graphInfo.id;
-					graph.parent = false;
-					graph.version = graphInfo.version;
-				
-					for(var i=0; nodeInfo && i<nodeInfo.length; i++){
-						var node = new Node(nodeInfo[i].name, nodeInfo[i].description);
-						node.id = nodeInfo[i].id;
-						node.x = nodeInfo[i].x;
-						node.y = nodeInfo[i].y;
-						node.color = nodeInfo[i].color;
-						graph.addNode(node);
-					}
-				
-					for(var i=0; edgeInfo && i<edgeInfo.length; i++){
-						var source = graph.getNodeWithId(edgeInfo[i].src);
-						var destination = graph.getNodeWithId(edgeInfo[i].dst);
-						if(source && destination)
-							source.addChild(destination);
-					}
-					student.getGraphHistoryOf(project).addGraph(graph);
-				}
-				displayFunction();
-				loadedGraphs = true;
-			}
-		);
+	if(student.getGraphHistoryOf(project).graphs.length == 0){
+		getTopLevelGraphsForStudentProject(project.course, project, student, displayFunction);
 	}
 	else{
 		displayFunction();
@@ -694,8 +659,15 @@ function displayDetailStudentProject(student, project, back){
 
 function newGraphFunction(){
 	var currentGraphHistory = currentStudent.getGraphHistoryOf(currentProject);
-	var newGraph = (currentGraphHistory.graphs.length > 0) ? currentGraphHistory.graphs[currentGraphHistory.graphs.length-1].clone() : new Graph();
-	currentGraphHistory.addGraph(newGraph);
+	var newGraph = false;
+	if(currentGraphHistory.graphs.length > 0){
+		newGraph = currentGraphHistory.graphs[currentGraphHistory.graphs.length-1].clone(false);
+	}
+	else{
+		newGraph = new Graph();
+		createGraph(newGraph);
+		currentGraphHistory.addGraph(newGraph);
+	}
 	showGraph(newGraph);
 	currentProject.executeNewVersionPrompts(currentStudent);
 }

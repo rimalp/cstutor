@@ -27,11 +27,14 @@ var onload = function(){
 	background = r.rect(0, 0, width, height);
 	background.attr({fill: "white", stroke: "black"});
 	background.dblclick(function(){
-			updateGraph(currentGraph);
+			if(focusNode){
+				console.log("update graph");
+				//updateGraph(currentGraph);
 			
-			focusNode.contract();
-			currentGraph = focusNode.graph;
-			focusNode = focusNode.owner;
+				focusNode.contract();
+				currentGraph = focusNode.graph;
+				focusNode = focusNode.owner;
+			}
 		});
 	background.drag(function(dx, dy, x, y){
 				if(edgeClippers){
@@ -199,6 +202,7 @@ var addNode = function(name, description){
 	node.setAppearence(canvas.scrollLeft + canvas.offsetWidth/2, canvas.scrollTop + canvas.offsetHeight/2, 40, renderer);
 	node.show();
 	currentGraph.addNode(node);
+	createNode(node);
 	updateMiniMap();
 	
 	//for frequency prompts
@@ -264,6 +268,8 @@ Node.prototype = {
 		this.graph.nodes.splice(this.graph.nodes.indexOf(this), 1)[0].hide();
 		if(this.id > 0)
 			this.graph.removedNodes[this.graph.removedNodes.length] = this;
+		
+		deleteNode(this);
 		updateMiniMap();
 	},
 	
@@ -327,6 +333,8 @@ Node.prototype = {
 			if(Raphael.isBBoxIntersect(trashcan.getBBox(), this.getBBox())){
 				selfRef.remove();
 			}
+			
+			updateNode(selfRef);
 			updateMiniMap();
 		}
 	},
@@ -373,15 +381,18 @@ Node.prototype = {
 				focusNode = selfRef;
 				centerX = selfRef.body.attr('cx');	
 				centerY = selfRef.body.attr('cy');
-				getSubGraph(focusNode, function(data, status){
+				uniqueID = -1;
+				
+				//save current graph
+				getSubGraph(selfRef, currentProject, currentStudent, function(data, status){
 					console.log("data: " + data);
-					
-					if(!selfRef.subgraph){
+			
+					/*if(!selfRef.subgraph){
 						selfRef.subgraph = new Graph();
 						selfRef.subgraph.title = selfRef.data + "'s subgraph";
 						selfRef.subgraph.topLevel = false;
 						selfRef.subgraph.parent = selfRef;
-					}
+					}*/
 					currentGraph = selfRef.subgraph;
 
 					selfRef.expand();
@@ -412,6 +423,7 @@ Node.prototype = {
 		setTimeout(function(){
 			background.attr({fill: selfRef.body.attr("fill"), stroke: selfRef.body.attr("stroke"), "fill-opacity": selfRef.body.attr("fill-opacity")});
 			selfRef.body.remove();
+			selfRef.graph.hide();
 			selfRef.subgraph.show();
 			updateMiniMap();
 		}, 1000);
@@ -573,19 +585,26 @@ Graph.prototype = {
 				return i;
 		}
 	},
-	clone: function(owner){
+	clone: function(owner, version){
 		var cloneGraph = new Graph();
-		cloneGraph.graphHistory = true;
-		cloneGraph.version = this.version+1;
+		cloneGraph.id = -1;
+		if(!owner){
+			this.graphHistory.addGraph(cloneGraph);
+			console.log("added top level clone graph");
+		}
+		cloneGraph.version = version || this.version+1;
+		cloneGraph.parent = owner;
+		
 		for(var i=0; i<this.nodes.length; i++){
 			var current = this.nodes[i];
 			var cloneNode = new Node(current.data, current.description);
+			cloneNode.id = -i - 1;
 			cloneNode.setAppearence(current.x, current.y, current.radius);
 			cloneNode.color = current.color;
 			cloneNode.owner = owner;
-			if(current.subgraph != false){
-				cloneNode.subgraph = current.subgraph.clone(cloneNode);
-			}
+			//if(current.subgraph != false){
+			//	cloneNode.subgraph = current.subgraph.clone(cloneNode, cloneGraph.version);
+			//}
 			cloneGraph.addNode(cloneNode);
 		}
 		for(var i=0; i<this.nodes.length; i++){
@@ -597,11 +616,21 @@ Graph.prototype = {
 			}
 		}
 		
+		var self = this;
+		updateGraph(cloneGraph, function(){
+			for(var i=0; i<self.nodes.length; i++){
+				var current = self.nodes[i];
+				if(current.subgraph != false){
+					cloneGraph.nodes[i].subgraph = current.subgraph.clone(cloneGraph.nodes[i], cloneGraph.version);
+				}
+			}
+		});
+		
 		return cloneGraph;
 	},
 	getNodeWithId: function(id){
 		for(var i=0; i<this.nodes.length; i++){
-			if(this.nodes[i].id = id)
+			if(this.nodes[i].id == id)
 				return this.nodes[i];
 		}
 		return false;
