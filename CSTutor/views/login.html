@@ -1,54 +1,100 @@
 <html>
 <head>
 
-<style>
+	<style>
 
-body{
-	font-family: "Droid Sans",Helvetica,Arial,sans-serif;
-}
-
-button{
-	background-color: rgb(80, 129, 179);
-	color: white;
-	padding: 0.833em;
-	display: inline-block;
-	text-decoration: none;
-	border-radius: 0.3125em 0.3125em 0.3125em 0.3125em;
-	font-family: "Droid Sans",Helvetica,Arial,sans-serif;
-	line-height: 1.125em;
-	margin: 10px;
-	border: 1px solid rgb(217, 219, 221);
-}
-
-input{
-	padding: 1em 0.625em;
-	border-radius: 0.3125em 0.3125em 0.3125em 0.3125em;
-	border: 1px solid rgb(217, 219, 221);
-}
-
-</style>
-
-<script type="text/javascript" src="../public/javascripts/database_requests.js"></script>
-<script type="text/javascript">
-
-var existing_user = true;
-
-function toggleFunction(){
-	if(existing_user){
-		document.getElementById('confirm_password_div').style.visibility = "visible";
-		document.getElementById('create_button').innerHTML = "Existing User";
-		document.getElementById('login_title').innerHTML = "Create New Account";
-		existing_user = false;
+	body{
+		font-family: "Droid Sans",Helvetica,Arial,sans-serif;
 	}
-	else{
-		document.getElementById('confirm_password_div').style.visibility = "hidden";
-		document.getElementById('create_button').innerHTML = "Create New";
-		document.getElementById('login_title').innerHTML = "Existing User";
-		existing_user = true;
-	}
-}
 
-</script>
+	button{
+		background-color: rgb(80, 129, 179);
+		color: white;
+		padding: 0.833em;
+		display: inline-block;
+		text-decoration: none;
+		border-radius: 0.3125em 0.3125em 0.3125em 0.3125em;
+		font-family: "Droid Sans",Helvetica,Arial,sans-serif;
+		line-height: 1.125em;
+		margin: 10px;
+		border: 1px solid rgb(217, 219, 221);
+	}
+
+	input{
+		padding: 1em 0.625em;
+		border-radius: 0.3125em 0.3125em 0.3125em 0.3125em;
+		border: 1px solid rgb(217, 219, 221);
+	}
+
+	</style>
+
+	<script type="text/javascript" src="../public/javascripts/database_requests.js"></script>
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+	<script type="text/javascript">
+
+	var existing_user = true;
+
+	function toggleFunction(){
+		if(existing_user){
+			document.getElementById('confirm_password_div').style.display = "inherit";
+			document.getElementById('first_name_div').style.display = "inherit";
+			document.getElementById('last_name_div').style.display = "inherit";
+			document.getElementById('create_button').innerHTML = "Existing User";
+			document.getElementById('login_title').innerHTML = "Create New Account";
+			existing_user = false;
+		}
+		else{ //new user registration
+			document.getElementById('confirm_password_div').style.display = "none";
+			document.getElementById('first_name_div').style.display = "none";
+			document.getElementById('last_name_div').style.display = "none";
+			document.getElementById('create_button').innerHTML = "Create New";
+			document.getElementById('login_title').innerHTML = "Existing User";
+			existing_user = true;
+		}
+	}
+
+	//sending request to server 
+	function sendRequest(){
+		if(existing_user){
+			var userEmail = document.getElementById('email').value;
+			var userPassword = document.getElementById('password').value;
+			if(email.length ==0 || password.length==0){
+				//error message
+			}else{
+				$.post('/validate_login',
+				{email:userEmail, password:userPassword},
+				function(data, status) {
+					//callback function
+				  console.log("Data: " + data + "\nStatus: " + status);
+				});
+			}
+		}else{
+			var userEmail = document.getElementById('email').value;
+			var userPassword = document.getElementById('password').value;
+			var confirmPassword = document.getElementById('confirm_password').value;
+			var firstname = document.getElementById('firstname').value;
+			var lastName = document.getElementById('lastname').value;
+			
+			console.log("Email: " + userEmail + "  Password: " + userPassword);
+			if(userPassword !== confirmPassword){
+				console.log("different passwords:  " + userPassword + "  " + confirmPassword);
+				//display passwords different error
+			}else if(userEmail.length == 0){
+				console.log("invalid email");
+				//display no email address message
+			}else{
+				console.log("sending register data");
+				$.post('/register', 
+				{email:userEmail, password:userPassword, firstName:firstname, lastName:lastName},
+				function(data, status){
+					//callback function
+					console.log("Data: " + data + "\nStatus: " + status);
+				});
+			}
+		}
+	}
+
+	</script>
 
 </head>
 
@@ -64,10 +110,13 @@ function toggleFunction(){
 	
 	<div id="login_div" style="display: inline-block; border-left: solid black 1px; padding: 20px; text-align: center;">
 			<h3 id="login_title">Existing User</h3>
-			<div style="float: left; text-align: left;">Username:<br><input></div><br>
-			<div style="float: left; text-align: left;">Password:<br><input type="password"></div><br>
-			<div id="confirm_password_div" style="visibility: hidden; float: left; text-align: left;">Confirm Password:<br> <input type="password"></div><br>
-			<button>Log In</button><button id="create_button" onclick="toggleFunction()">Create Account</button>
+			<div style="float: left; text-align: left;">Email:<br><input id="email"></div><br>
+			<div style="float: left; text-align: left;">Password:<br><input id="password" type="password"></div><br>
+			<div id="confirm_password_div" style="display: none; float: left; text-align: left;">Confirm Password:<br> <input id="confirm_password" type="password"></div><br>
+			<div id="first_name_div" style="display: none; float: left; text-align: left;">First Name:<br><input id="firstname"></div><br>
+			<div id="last_name_div" style="display: none; float: left; text-align: left;">Last Name:<br><input id="lastname"></div><br>
+			<button id="login_button" onclick="sendRequest()" >Log In</button>
+			<button id="create_button" onclick="toggleFunction()">Create Account</button>
 	</div>
 
 </div>

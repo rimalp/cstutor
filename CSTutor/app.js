@@ -17,7 +17,7 @@ var express = require('express')
 console.log(path.join(__dirname));
 app.configure(function(){
 	// all environments
-	app.set('port', process.env.PORT || 3009);
+	app.set('port', process.env.PORT || 3018);
 	app.set('views', __dirname + '/views'); //__dirname is the curent dir
 	// app.set('view engine', 'html'); //default rendering is jade
 	app.engine('html', require('ejs').renderFile);
@@ -46,6 +46,8 @@ if ('development' == app.get('env')) {
 
 
 app.get('/', function(req, res){res.render("graph.html");}); //home page
+
+app.get('/login', function(req, res){res.render("login.html");});//login page
 
 
 
@@ -268,15 +270,18 @@ app.post('/register', function(req, res){
 
 
 //for testing purposes
+/*
 app.post('/login', function(req, res){
 	var name = req.body.name;
 	console.log("Name received:" + name);
 	//received form data, get the data from req.body.(param)
 	var test = {param: "This is from the server."};
 	console.log("Request received.");
-	res.writeHead(200, { 'Content-Type': 'text/plain' });
-	res.end(JSON.stringify(test));
+	//res.writeHead(200, { 'Content-Type': 'text/plain' });
+	//res.end(JSON.stringify(test));
+	res.render("login.html");
 });
+*/
 
 
 //===================================== PUT requests (CREATE/UPDATE of information) ================================
