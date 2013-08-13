@@ -17,6 +17,30 @@ function getStudentsForCourse(course, callback){
 		callback);
 }
 
+function getPromptsForProject(project){
+	$.post('/prompts',
+		{projectName: project.title, courseName: project.course.title, courseYear: project.course.year, courseSemester: project.course.semester},
+		function(data, status){
+			console.log("data: " + data);
+			var response = eval(data);
+			for(var i=0; i<response.length; i++){
+				var prompt = new Prompt(response[i].text, response[i].requiresInput==0?false:true, response[i].eventType, response[i].frequency);
+				prompt.id = response[i].id;
+				project.prompts[project.prompts.length] = prompt;
+			}
+		});
+}
+
+function createPrompt(prompt, project){
+	$.post('/create_prompt',
+		{projectName: project.title, courseName: project.course.title, courseYear: project.course.year, courseSemester: project.course.semester, text: prompt.text, requiresInput: prompt.requiresInput?1:0, eventType: prompt.eventType, frequency: prompt.frequency},
+		function(data, status){
+			console.log("data: " + data);
+			var response = eval(data);
+			prompt.id = response[0].id;
+		});
+}
+
 function getTopLevelGraphsForStudentProject(course, project, student, displayFunction){
 	$.post('/graphs_top',
 		{projectName : project.title, courseName: course.title, courseYear: course.year, courseSemester: course.semester, studentEmail: student.title},
@@ -226,10 +250,10 @@ function createEdge(edge){
 	}
 }
 
-function removeEdge(edge){
+function deleteEdge(edge){
 	var postRemoveEdge = function(){
 		var edgeInfo = {sourceNode: edge.sourceNode.id, destNode: edge.destNode.id, graphId: edge.sourceNode.graph.id};
-		$.post('/remove_edge',
+		$.post('/delete_edge',
 			{"edgeInfo": edgeInfo},
 			function(data, status) {
 				console.log("data: " + data);

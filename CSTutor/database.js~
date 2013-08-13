@@ -109,6 +109,30 @@ Database.prototype = {
 				}
 			});
 	},
+	
+	getPromptsForProject: function(projectName, courseName, courseYear, courseSemester, callback){
+		client.query("SELECT id, text, requiresInput, eventType, frequency FROM prompt WHERE prompt.projectName=$1 AND prompt.courseName=$2 AND prompt.courseYear=$3 AND prompt.courseSemester=$4 ",
+			[projectName, courseName, courseYear, courseSemester], function(err, result){
+				if(err){
+					callback(err);
+				}else{
+					callback(null, result);
+				}
+		});
+	},
+	
+	createPrompt: function(projectName, courseName, courseYear, courseSemester, text, requiresInput, eventType, frequency, callback){
+		client.query("INSERT INTO prompt (projectName, courseName, courseYear, courseSemester, text, requiresInput, eventType, frequency) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id",
+			[projectName, courseName, courseYear, courseSemester, text, requiresInput, eventType, frequency],
+			function(err, result){
+				if(err){
+					callback(err);
+				}
+				else{
+					callback(null, result);
+				}
+		});
+	},
 
 	//get a list of top level graphs for a given project and student
 	/*	This method returns a JSON string where it contains arrays of objects with three parameters - graphInfo, nodesInfo and edgesInfo
@@ -793,36 +817,37 @@ Database.prototype = {
 	},
 	
 	registerUser: function(email, password, firstName, lastName, isAdmin, callback){
-		if(isAdmin){
-			client.query("SELECT count(email) FROM professor WHERE email=$1", [email], function(err, result){
-					if(err) callback(err);
+		// isAdmin always false for now
+		if(isAdmin == true){
+			client.query("SELECT * FROM professor WHERE email=$1", [email], function(err, result){
+					if(err) return callback(err);
 					else if(result.rowCount == 0){
 						client.query("INSERT INTO professor VALUES($1,$2,$3,$4)",[email, firstName, lastName, password], function(err, result){
 							if(err) callback(err);
 							else{
 								result.newUser = true;
-								callback(null, result);
+								return callback(null, result);
 							}
 						});
 					}else{
 						result.newUser = false;
-						callback(null, result);
+						return callback(null, result);
 					}
 				});
 		}else{
-			client.query("SELECT count(email) FROM student WHERE email=$1", [email], function(err, result){
-					if(err) callback(err);
+			client.query("SELECT * FROM student WHERE email=$1", [email], function(err, result){
+					if(err) return callback(err);
 					else if(result.rowCount == 0){
 						client.query("INSERT INTO student VALUES($1,$2,$3,$4)",[email, firstName, lastName, password], function(err, result){
 							if(err) callback(err);
 							else{
 								result.newUser = true;
-								callback(null, result);
+								return callback(null, result);
 							}
 						});
 					}else{
 						result.newUser = false;
-						callback(null, result);
+						return callback(null, result);
 					}
 				});
 		}

@@ -17,7 +17,7 @@ var express = require('express')
 console.log(path.join(__dirname));
 app.configure(function(){
 	// all environments
-	app.set('port', process.env.PORT || 3018);
+	app.set('port', process.env.PORT || 3009);
 	app.set('views', __dirname + '/views'); //__dirname is the curent dir
 	// app.set('view engine', 'html'); //default rendering is jade
 	app.engine('html', require('ejs').renderFile);
@@ -82,8 +82,8 @@ client.connect(function(err) {
 	var create_Edge = "CREATE TABLE  edge (src integer, dst integer, graphId integer, PRIMARY KEY(src, dst))";
 	var create_Graph = "CREATE TABLE  graph(id SERIAL, parentNodeId integer, version integer, description text, PRIMARY KEY(id))";
 
-	var create_Question = "CREATE TABLE  question(id SERIAL, projectId integer, question varchar)";
-	var create_Answer = "CREATE TABLE  answer(id SERIAL, questionId integer, graphId integer, answer varchar)";
+	var create_Prompt = "CREATE TABLE  prompt(id SERIAL, projectName varchar, courseName varchar, courseYear integer, courseSemester varchar, text varchar, requiresInput integer, eventType varchar, frequency integer)";
+	var create_Response = "CREATE TABLE  response(id SERIAL, promptId integer, graphId integer, text varchar)";
 
   client.query('SELECT NOW() AS "theTime"', function(err, result) {
     if(err) {
@@ -145,6 +145,16 @@ client.connect(function(err) {
 				      return console.error('error running a create GRAPH query.', err);
 				    }
 			  	});
+			    client.query(create_Prompt, function(err, result) {
+				    if(err) {
+				      return console.error('error running a create GRAPH query.', err);
+				    }
+			  	});
+			    client.query(create_Response, function(err, result) {
+				    if(err) {
+				      return console.error('error running a create GRAPH query.', err);
+				    }
+			  	});
 
 			    client.on('drain', function(){
 			    	console.log("FINISHED TABLE CREATION.");
@@ -197,13 +207,18 @@ app.post('/students', function(req, res){
 	});
 });
 
-app.post('/query', function(req, res){
-		client.query(res.body.query, function(err, result){
-			res.writeHead(200, { 'Content-Type': 'text/plain' });
-			res.end(JSON.stringify(result));
-		});
+app.post('/prompts', function(req, res){
+	database.getPromptsForProject(req.body.projectName, req.body.courseName, req.body.courseYear, req.body.courseSemester, function(err, result){
+		sendPostResponse(req, res, err, result);
+	});
 });
 
+app.post('/create_prompt', function(req, res){
+	database.createPrompt(req.body.projectName, req.body.courseName, req.body.courseYear, req.body.courseSemester, req.body.text, req.body.requiresInput, req.body.eventType, req.body.frequency, function(err, result){
+		sendPostResponse(req, res, err, result);
+	});
+});
+	
 
 //get top level graphs for a course>lab>student. 
 //request body params: projectName, courseName, courseYear, courseSemester, studentEmail
@@ -376,7 +391,7 @@ app.post('/create_edge', function(req, res){
 });
 
 app.post('/delete_edge', function(req, res){
-	database.deleteEdge(req.body.nodeInfo, function(err, result){
+	database.deleteEdge(req.body.edgeInfo, function(err, result){
 		sendPutRequest(req, res, err, result);
 	});
 });
