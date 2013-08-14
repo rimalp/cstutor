@@ -218,7 +218,30 @@ app.post('/create_prompt', function(req, res){
 		sendPostResponse(req, res, err, result);
 	});
 });
-	
+
+app.post('/update_prompt', function(req, res){
+	database.updatePrompt(req.body.id, req.body.projectName, req.body.courseName, req.body.courseYear, req.body.courseSemester, req.body.text, req.body.requiresInput, req.body.eventType, req.body.frequency, function(err, result){
+		sendPostResponse(req, res, err, result);
+	});
+});
+
+app.post('/delete_prompt', function(req, res){
+	database.deletePrompt(req.body.id, function(err, result){
+		sendPostResponse(req, res, err, result);
+	});
+});
+
+app.post('/responses', function(req, res){
+	database.getResponsesForGraph(req.body.graphId, function(err, result){
+		sendPostResponse(req, res, err, result);
+	});
+});
+
+app.post('/create_response', function(req, res){
+	database.createResponse(req.body.id, req.body.promptId, req.body.graphId, req.body.text, function(err, result){
+		sendPostResponse(req, res, err, result);
+	});
+});
 
 //get top level graphs for a course>lab>student. 
 //request body params: projectName, courseName, courseYear, courseSemester, studentEmail

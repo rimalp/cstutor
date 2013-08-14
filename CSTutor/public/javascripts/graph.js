@@ -225,6 +225,7 @@ var Node = function(d, description){
 	this.radius = 40;
 	this.x = 0;
 	this.y = 0;
+	this.hidden = true;
 	this.body = false;
 	//this.top = false;
 	this.bottom = false;
@@ -451,13 +452,17 @@ Node.prototype = {
 		
 		//hide current graph
 		for(var i=0; i<this.subgraph.nodes.length; i++){
-			this.subgraph.nodes[i].body.animate({"fill-opacity": 0, "stroke-opacity": 0}, time/2);
-			this.subgraph.nodes[i].text.animate({"fill-opacity": 0, "stroke-opacity": 0}, time/2);
-			this.subgraph.nodes[i].bottom.animate({"fill-opacity": 0, "stroke-opacity": 0}, time/2);
+			if(!this.subgraph.nodes[i].hidden){
+				this.subgraph.nodes[i].body.animate({"fill-opacity": 0, "stroke-opacity": 0}, time/2);
+				this.subgraph.nodes[i].text.animate({"fill-opacity": 0, "stroke-opacity": 0}, time/2);
+				this.subgraph.nodes[i].bottom.animate({"fill-opacity": 0, "stroke-opacity": 0}, time/2);
+			}
 		}
 		for(var i=0; i<this.subgraph.edges.length; i++){
-			this.subgraph.edges[i].path.animate({"fill-opacity": 0, "stroke-opacity": 0}, time/2);
-			this.subgraph.edges[i].arrow.animate({"fill-opacity": 0, "stroke-opacity": 0}, time/2);
+			if(!this.subgraph.edges[i].hidden){
+				this.subgraph.edges[i].path.animate({"fill-opacity": 0, "stroke-opacity": 0}, time/2);
+				this.subgraph.edges[i].arrow.animate({"fill-opacity": 0, "stroke-opacity": 0}, time/2);
+			}
 		}
 		
 		//show new graph
@@ -478,6 +483,7 @@ Node.prototype = {
 			setTimeout(func, time);
 	},
 	hide: function(){
+		this.hidden = true;
 		if(this.body)
 			this.body.remove();
 		if(this.bottom)
@@ -490,6 +496,7 @@ Node.prototype = {
 		}
 	},
 	show: function(){
+		this.hidden = false;
 		this.body = r.circle(this.x, this.y, this.radius).attr({fill: this.color, "fill-opacity": .8, stroke: this.color});
 		//this.top = r.circle(this.x, this.y - this.radius*.9, this.radius*.1).attr({fill: "black", stroke: "black", "fill-opacity": .8});
 		this.bottom = r.circle(this.x, this.y + this.radius*.9, this.radius*.1).attr({fill: "black", stroke: "black", "fill-opacity": .8});
@@ -508,12 +515,14 @@ var Edge = function(sourceNode, destNode){
 	this.destNode = destNode;
 	this.path = false;
 	this.arrow = false;
+	this.hidden = true;
 };
 Edge.prototype = {
 	getJSON: function(){
 		return {sourceId: this.sourceNode.id, destinationId: this.destNode.id};
 	},
 	show: function(){
+		this.hidden = false;
 		if(this.path)
 			this.path.remove();
 		if(this.arrow)
@@ -531,6 +540,7 @@ Edge.prototype = {
 		this.arrow = r.path(p);
 	},
 	hide: function(){
+		this.hidden = true;
 		this.path.remove();
 		this.arrow.remove();
 	}
@@ -593,16 +603,28 @@ Graph.prototype = {
 				return i;
 		}
 	},
-	clone: function(owner, version){
+	clone: function(owner, version, deepestSubgraph, topLevel){
 		var cloneGraph = new Graph();
 		cloneGraph.id = -1;
 		if(!owner){
 			this.graphHistory.addGraph(cloneGraph);
 			console.log("added top level clone graph");
+			
+			deepestSubgraph = this.getDeepestSubgraph();
+			topLevel = cloneGraph;
 		}
 		cloneGraph.version = version || this.version+1;
 		cloneGraph.parent = owner;
-		createGraph(cloneGraph);
+		
+		var showFunction = function(){
+			showGraph(topLevel);
+			console.log("SHOW GRAPH NOW");
+		};
+		
+		if(this == deepestSubgraph && this.nodes.length == 0)
+			createGraph(cloneGraph, showFunction);
+		else
+			createGraph(cloneGraph);
 		
 		for(var i=0; i<this.nodes.length; i++){
 			var current = this.nodes[i];
@@ -612,10 +634,13 @@ Graph.prototype = {
 			cloneNode.color = current.color;
 			cloneNode.owner = owner;
 			cloneGraph.addNode(cloneNode);
-			createNode(cloneNode);
+			if(this == deepestSubgraph && i==this.nodes.length-1 && this.edges.length == 0)
+				createNode(cloneNode, showFunction);
+			else
+				createNode(cloneNode);
 			
 			if(current.subgraph != false){
-				cloneNode.subgraph = current.subgraph.clone(cloneNode, cloneGraph.version);
+				cloneNode.subgraph = current.subgraph.clone(cloneNode, cloneGraph.version, deepestSubgraph, topLevel);
 			}
 		}
 		for(var i=0; i<this.nodes.length; i++){
@@ -628,10 +653,38 @@ Graph.prototype = {
 		}
 		
 		for(var i=0; i<cloneGraph.edges.length; i++){
-			createEdge(cloneGraph.edges[i]);
+			if(this == deepestSubgraph && i==this.edges.length-1)
+				createEdge(cloneGraph.edges[i], showFunction);
+			else
+				createEdge(cloneGraph.edges[i]);
 		}
 		
 		return cloneGraph;
+	},
+	getDeepestSubgraph: function(){//if there is a tie for deepest, the node with the highest index will be chosen
+		var worklist = new Array();
+		var deepest = 0;
+		var subgraph = this;
+		
+		for(var i=this.nodes.length-1; i>=0; i--){
+			worklist.push({node: this.nodes[i], depth: 0});
+		}
+		
+		while(worklist.length != 0){
+			var element = worklist.pop();
+			if(element.node.subgraph){
+				for(var i=element.node.subgraph.nodes.length-1; i>=0; i--){
+					var currentDepth = element.depth + 1;
+					worklist.push({node: element.node.subgraph.nodes[i], depth: currentDepth});
+					if(currentDepth >= deepest){
+						deepest = currentDepth;
+						subgraph = element.node.subgraph;
+					}
+				}
+			}
+		}
+		
+		return subgraph;
 	},
 	getNodeWithId: function(id){
 		for(var i=0; i<this.nodes.length; i++){
