@@ -218,6 +218,12 @@ app.post('/create_prompt', function(req, res){
 		sendPostResponse(req, res, err, result);
 	});
 });
+
+app.post('/update_prompt', function(req, res){
+	database.createPrompt(req.body.id, req.body.projectName, req.body.courseName, req.body.courseYear, req.body.courseSemester, req.body.text, req.body.requiresInput, req.body.eventType, req.body.frequency, function(err, result){
+		sendPostResponse(req, res, err, result);
+	});
+});
 	
 
 //get top level graphs for a course>lab>student. 
