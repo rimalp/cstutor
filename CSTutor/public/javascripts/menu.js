@@ -419,6 +419,9 @@ function displayNewProject(course, project, back){
 								console.log(project.course.title);
 								createPrompt(currentPrompt, project);
 							}
+							else{
+								updatePrompt(currentPrompt, project);
+							}
 						}
 						project.title = titleInput.value;
 					}

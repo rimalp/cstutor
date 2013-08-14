@@ -133,7 +133,23 @@ Database.prototype = {
 				}
 		});
 	},
-
+	
+	updatePrompt: function(id, projectName, courseName, courseYear, courseSemester, text, requiresInput, eventType, frequency, callback){
+		client.query("DELETE FROM prompt WHERE id = $1", [id],
+			function(err, result){
+				client.query("INSERT INTO prompt (id, projectName, courseName, courseYear, courseSemester, text, requiresInput, eventType, frequency) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+					[id, projectName, courseName, courseYear, courseSemester, text, requiresInput, eventType, frequency],
+					function(err, result){
+						if(err){
+							callback(err);
+						}
+						else{
+							callback(null, result);
+						}
+				});
+		});
+	},
+	
 	//get a list of top level graphs for a given project and student
 	/*	This method returns a JSON string where it contains arrays of objects with three parameters - graphInfo, nodesInfo and edgesInfo
 		for each top level graph fetched.
