@@ -94,14 +94,18 @@
 					if(response.success){
 						document.getElementById('error_message').setAttribute('style', 'color: green');
 						document.getElementById('error_message').innerHTML = 'Logged In!';
-						$.cookie("email", userEmail);
-						$.cookie("password", userPassword);
+						$.cookie("email", response.rows[0].email);
+						$.cookie("password", response.rows[0].password);
+						$.cookie("firstName", response.rows[0].firstname);
+						$.cookie("lastName", response.rows[0].lastname);
 						if(response.rows.isAdmin){
 							$.cookie("mode", "admin");
 						}else{
 							$.cookie("mode", "student");
 						}
-						alert("session.email: " + $.cookie("email"));
+						alert("cookie.user set to: " + $.cookie("email"));
+						//load the home page of the user
+						window.location.href = "/";
 					}
 				});
 			}

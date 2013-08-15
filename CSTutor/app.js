@@ -17,7 +17,7 @@ var express = require('express')
 console.log(path.join(__dirname));
 app.configure(function(){
 	// all environments
-	app.set('port', process.env.PORT || 3009);
+	app.set('port', process.env.PORT || 3018);
 	app.set('views', __dirname + '/views'); //__dirname is the curent dir
 	// app.set('view engine', 'html'); //default rendering is jade
 	app.engine('html', require('ejs').renderFile);
@@ -167,6 +167,10 @@ var database = new db.Database(client);
 
 console.log("database object created");
 
+database.getFullGraph(1, function(err, result){
+	console.log("ERROR: " + err + " RESULT: " + result);
+});
+
 
 
 //==============  GET requests for database queries ===============================
@@ -190,7 +194,8 @@ app.post('/courses_student', function(req, res){
 });
 //get all the courses for a student. request body params:  professorEmail
 app.post('/courses_professor', function(req, res){
-	database.getCoursesForProfessor(req.body.studentEmail, function(err, result){
+	console.log("Get professor email: " + req.body.email);
+	database.getCoursesForProfessor(req.body.email, function(err, result){
 		sendPostResponse(req, res, err, result);
 	});
 });
@@ -215,12 +220,6 @@ app.post('/prompts', function(req, res){
 
 app.post('/create_prompt', function(req, res){
 	database.createPrompt(req.body.projectName, req.body.courseName, req.body.courseYear, req.body.courseSemester, req.body.text, req.body.requiresInput, req.body.eventType, req.body.frequency, function(err, result){
-		sendPostResponse(req, res, err, result);
-	});
-});
-
-app.post('/update_prompt', function(req, res){
-	database.createPrompt(req.body.id, req.body.projectName, req.body.courseName, req.body.courseYear, req.body.courseSemester, req.body.text, req.body.requiresInput, req.body.eventType, req.body.frequency, function(err, result){
 		sendPostResponse(req, res, err, result);
 	});
 });
@@ -316,6 +315,7 @@ var sendPutRequest = function(req, res, err, result){
 		res.writeHead(200, { 'Content-Type': 'text/plain' });
 		if(result){
 			res.end(JSON.stringify(result.rows));
+			console.log("Response data: " + JSON.stringify(result));
 		}else{
 			res.end("Successfully updated the database.");
 		}

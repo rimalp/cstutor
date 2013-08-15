@@ -74,8 +74,8 @@ Database.prototype = {
 	//query to get the courses for a given professor
 	getCoursesForProfessor: function(profEmail, callback){
 		var q = "SELECT * FROM course WHERE (name, year, semester) IN "+
-				"(SELECT courseName, courseYear, courseSemester FROM student_course WHERE email='"+profEmail+"')";
-		rawQuery(q, function(err, result) {
+		"(SELECT courseName, courseYear, courseSemester FROM professor_course WHERE email='"+profEmail+"')";
+		client.query(q, function(err, result) {
 			if(err){
 				callback(err);	
 			} else {
@@ -148,6 +148,76 @@ Database.prototype = {
 						}
 				});
 		});
+	},
+	
+	getFullGraph: function(graphId, callback){
+		var running=1;
+		var itemlist = [];
+		itemlist[0] = graphId;
+		var graphlist = [];
+		
+		var launcher = function(){
+			while(running > 0 && itemlist.length > 0){
+				//console.log("running: " + running + ", list size: " + itemlist.length);
+				var currentGraphId = itemlist.pop();
+				if(currentGraphId != undefined){
+					console.log("inside if " + client);
+					client.query("SELECT * FROM graph WHERE id=$1", [currentGraphId], function (err, result){
+						if(err){
+							console.log("ERROR");
+							 callback(err);
+						}else{
+							console.log("RESULT: " + JSON.stringify(result));
+							var newGraph = {};
+							var graphInfo = result.rows[0];
+							newGraph.graphInfo = graphInfo;
+							//get the edges
+							client.query("SELECT * FROM edge WHERE graphid=$1", [currentGraphId], function (err, result){
+								if(err){
+									callback(err);
+								}else{
+									var edgeInfo = result.rows;
+									newGraph.edgeInfo = edgeInfo;
+								}					
+							});
+							client.query("SELECT * FROM node where graphid=$1", [currentGraphId], function(err, result){
+								if(err){
+									callback(err);
+								} else {
+									var nodeInfo = result.rows;
+									newGraph.nodeInfo = nodeInfo;
+									for(var i=0; i< result.rows.length; i++){
+										client.query("SELECT * FROM graph WHERE parentNodeId=$1", [result.rows[i].id], function(err, result){
+											if(result.rows.length > 0){
+												itemlist.push(result.rows[0].id);
+												running++;
+											}
+										});
+									}
+									client.query("SELECT version()", function(err, result){
+										if(err){
+											callback(err);
+										}else{
+											graphlist.push(newGraph);
+											running--;
+											if(itemlist.length > 0){
+												launcher();
+											}
+											else if(running == 0){
+												console.log("GRAPHLIST: " + JSON.stringify(graphlist));
+												callback(null, graphlist);
+											}
+										}
+									});
+								}
+							});
+						}
+					});
+				}
+			}
+		}
+		
+		launcher();
 	},
 	
 	//get a list of top level graphs for a given project and student
@@ -320,12 +390,14 @@ Database.prototype = {
 	},
 
 	createCourse: function(name, year, semester, professorEmail, callback){
+		console.log("New Course Details: " + name + " " + year + " " + semester + " " + professorEmail);
 		client.query("SELECT year FROM course WHERE name=$1 AND year=$2 AND semester=$3",[name, year, semester], 
 		function(err, result){
 			if(err){
 				callback(err);
-			}else if(result.rows.rowCount ==0){
+			}else if(result.rows.length ==0){
 				//insert
+				console.log("course insert");
 				client.query("INSERT INTO course(name, year, semester) VALUES($1, $2, $3)", [name, year, semester],
 				function(err, result){
 					if(err){
@@ -333,33 +405,40 @@ Database.prototype = {
 					}else{
 						//insert into professor_course table
 						client.query("INSERT INTO professor_course VALUES($1, $2, $3, $4)", [professorEmail, name, year, semester],
-							function(err, callback){
+							function(err){
 								if(err){
 									callback(err);
 								}else{
-									callback(null);
+									callback(null, {rows:[{"exists":false}]});
 								}
 							});
 					}
 				});
 			}else{
-				//update
-				client.query("UPDATE course SET name=$1, year=$2, semester=#3  WHERE name=#1 AND year=$2 AND semester=$3",
+				
+				callback(null, {rows:[{"exists":true}]});
+				
+				/*
+				//update will not work
+				console.log("course update");
+				client.query("UPDATE course SET name=$1, year=$2, semester=$3  WHERE name=$1 AND year=$2 AND semester=$3",
 				 [name, year, semester], function(err){
 					if(err){
 						callback(err);
 					}else{
-						client.query("UPDATE professor_course SET email=$1, courseName=$2, courseYear=$3, courseSemester=$4 WHERE "+
-							          "email=$1, courseName=$2, courseYear=$3, courseSemester=$4", [professorEmail, name, year, semester],
-							          function(req, res){
+						console.log
+						client.query("UPDATE professor_course SET email=$1, coursename=$2, courseyear=$3, coursesemester=$4 WHERE "+
+							          "email=$1, coursename=$2, courseyear=$3, coursesemester=$4", [professorEmail, name, year, semester],
+							          function(err){
 							          	if(err){
 							          		callback(err);
 							          	}else{
-							          		callback(null);
+							          		callback(null, {rows:[{"exists":false}]});
 							          	}
 						});
 					}
 				});
+				* */
 			}
 		});
 	},

@@ -4,6 +4,14 @@ function getCoursesForStudent(student, callback){
 		{email: student.title},
 		callback);
 }
+function getCoursesForProfessor(professor, callback){
+	$.post('/courses_professor',
+		{email: professor.title},
+		function(data, status){
+			console.log("Received data: " + data  + "  " + status);
+			callback(data, status);
+		});
+}
 
 function getProjectsForCourse(course, callback){
 	$.post('/projects',
@@ -142,11 +150,14 @@ function createStudent(student){
 		});
 }
 
-function createCourse(course, professor){
+function createCourse(course, professor, callback){
 	$.post('/create_course',
-		{courseName: course.title, courseYear: course.year, courseSemester: course.semester, professorEmail: professer.title},
+		{courseName: course.title, courseYear: course.year, courseSemester: course.semester, professorEmail: professor.title},
 		function(data, status) {
 		  console.log("Data: " + data + "\nStatus: " + status);
+		  var response = eval(data);
+		  console.log("Course exists: " + response[0].exists);
+		  callback(response); //calls the callback function inside menu.js createNewCourse() method		  
 		});
 }
 
