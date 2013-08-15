@@ -1,0 +1,94 @@
+var express = require('express')
+  , routes = require('./routes')
+  , user = require('./routes/user')
+  , http = require('http')
+  , path = require('path')
+  , pg = require('pg')
+  , db = require('./database')
+  , index = require('./routes/index')
+  , Sequelize = require('sequelize');
+
+  var app = express();
+  
+  console.log(path.join(__dirname));
+app.configure(function(){
+	// all environments
+	app.set('port', process.env.PORT || 3000);
+	app.set('views', __dirname + '/views'); //__dirname is the curent dir
+	// app.set('view engine', 'html'); //default rendering is jade
+	app.engine('html', require('ejs').renderFile);
+	app.set('view engine', 'html');
+	//can set case sensitive routes, strict routing(forward slash trailing) both disabled by default
+
+	//middlewares - functions that runs before route function gets client request
+	// these middleware come from Connect framework used by express
+	// www.senchalabs.org/connect
+	app.use(express.favicon());
+	app.use(express.logger('dev'));
+	app.use(express.bodyParser());
+	app.use(express.methodOverride());
+	app.use(app.router);
+	app.use(require('less-middleware')({ src: __dirname }));
+	app.use(app.router); //calls the routes before the one below is called. ex: track what files are downloaded how often
+	app.use(express.static(path.join(__dirname))); //specifies the resource folder
+});
+
+
+
+// development only
+if ('development' == app.get('env')) {
+  app.use(express.errorHandler());
+}
+
+
+
+http.createServer(app).listen(app.get('port'), function(){
+  console.log('Express server listening on port ' + app.get('port'));
+});
+
+process.on('uncaughtException', function (err) {
+    console.log(err);
+}); 
+
+
+/*
+var sequelize = new Sequelize('gfb', 'rimalp', 'rimalp', { host: "localhost", port: 5432, dialect: "postgres" });
+// Quick example
+sequelize.query("SELECT * FROM node").success(function(myTableRows) {
+  console.log(myTableRows)
+});
+*/
+
+
+//Database connection
+//var conString = "postgres://giuebxxidfewyp:no861fjr7y_EglUXzEIb-gnZaP@ec2-54-225-68-241.compute-1.amazonaws.com:5432/dbjm3aqvs5ttg5";
+
+var conString = "postgres://rimalp:rimalp@localhost:5432/gfb";
+var client = new pg.Client(conString);
+
+console.log("before");
+//var client = new pg.Client({ host: 'localhost',user: 'rimalp',password: 'rimalp',database: 'gfb'});
+console.log("afterrr");
+
+client.connect(function(err) {
+	console.log("connect called ...");
+  	if(err) {
+   		return console.error('could not connect to postgres: ', err);
+  	}else{
+	    console.log("connected");
+	}
+});
+
+
+/*
+var DBWrapper = require('node-dbi').DBWrapper; 
+var DBExpr = require('node-dbi').DBExpr; 
+var dbConnectionConfig = { host: 'ww2.cs.lafayette.edu', user: 'rimalp', password: 'rimalp', database: 'gfb' };
+
+// Replace the adapter name with "mysql", "mysql-libmysqlclient", "sqlite3" or "pg" on the following line :
+dbWrapper = new DBWrapper( 'pg', dbConnectionConfig );
+dbWrapper.connect(function(err){
+    if(!err){ console.log("connected!");}
+    else{console.log("not connected :( ");}
+});
+*/

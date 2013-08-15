@@ -449,6 +449,51 @@ function displayNewProject(course, project, back){
 	detail_view.appendChild(confirmDiv);
 }
 
+//added by rimalp
+function displayNewCourse(courses, back){
+	clearDetailView();
+	showDetailView();
+
+	//load the simple form	
+	$('#detail_view').load("/views/new_course.html");
+	$('#add_student_header').text("test");
+	
+	
+}
+
+function displayNewStudent(course) {
+	clearDetailView();
+	showDetailView();
+	
+	//load the form
+	$('#detail_view').load("views/new_student.html");
+}
+
+function createNewCourse(){
+	var professor = {title: "liewc@lafayette.edu"};
+	var newCourse = {}
+	newCourse.title = $('#course_name').val();
+	newCourse.year = $('#course_year').val();
+	newCourse.semester = $('#course_semester').val()
+	console.log("values: " + newCourse.title + "  " + newCourse.year + "  " + newCourse.semester);
+	createCourse(newCourse, professor, function(response){
+		  if(response[0].exists){
+			alert("Duplicate course in Database!");
+		  }else{
+			//load the detail page again after new courses wre fetched
+			//first fetch the necessary data
+			var c = new Course(newCourse.title);
+			c.year = newCourse.year;
+			c.semester = newCourse.semester;
+			courses[courses.length] = c;
+			displayDetail(courses);
+			
+		  }
+	});
+}
+
+
+
 function addNewPrompt(promptArray, index, parent){
 	var prompt = promptArray[index];
 	var last = parent.removeChild(parent.lastChild);
@@ -564,7 +609,7 @@ function displayDetail(courses){
 	setTitle("Courses");
 	backButtonStack.push(getButtonDiv("Courses", function(){backButtonStack.pop(); displayDetail(courses);}));
 	var courseDiv = document.createElement("div");
-	getInfoBoxes("", courses, courseDiv, coursesToCourseOnClickMaker, function(){return "";});
+	getInfoBoxes("", courses, courseDiv, coursesToCourseOnClickMaker, function(){return "";}, function(){displayNewCourse(courses);});
 	
 	detail_view.appendChild(courseDiv);
 	
@@ -581,7 +626,7 @@ function displayDetailCourse(course, back){
 	var projectDiv = document.createElement("div");
 	getInfoBoxes("Projects", course.projects, projectDiv, courseToProjectOnClickMaker, function(){return "";}, function(){displayNewProject(course);});
 	var studentDiv = document.createElement("div");
-	getInfoBoxes("Students", course.students, studentDiv, getCourseToStudentOnClickMaker(course), function(){return "";});
+	getInfoBoxes("Students", course.students, studentDiv, getCourseToStudentOnClickMaker(course), function(){return "";}, function(){displayNewStudent(course);});
 	
 	detail_view.appendChild(projectDiv);
 	detail_view.appendChild(studentDiv);

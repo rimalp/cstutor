@@ -1,0 +1,32 @@
+
+<html>
+
+<head>
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+	<script src="/jquery.cookie.js"></script>
+	<link href="../bootstrap/css/bootstrap.css" rel="stylesheet">
+	<link href="../bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
+	
+	<script language='javascript'>
+		
+		$(document).ready(function initNewStudentPage(){
+		   $('#add_student_header').text("test");
+		   console.log("initnewpage called");
+		});
+		
+	</script>
+</head>
+
+<body>
+	<p><h3 id="add_student_header">Student Addition</h3></p><br>
+		
+	  <!-- <label>Student Name: </label>  
+	  <input id="student_email" type="text" class="span3" placeholder="example: CS150"> -->  
+	  <label>Registered Students (Control/Command + Click): </label>  
+	  <select id="add_student_select" class="span3" multiple>
+	  </select>  
+	 
+	  <button id="add_student_btn" onclick="createNewStudent()">Add</button>  
+</body>
+
+</html>
