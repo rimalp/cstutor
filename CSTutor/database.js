@@ -196,7 +196,11 @@ Database.prototype = {
 		});
 	},
 	
-	/*getGraph: function(graphId, callback){
+	getFullGraph: function(graphId, callback){
+		
+	},
+	
+	getGraph: function(graphId, callback){
 		var graph = {};
 		var graphInfo = {};
 		var nodeInfo = [];
@@ -261,7 +265,7 @@ Database.prototype = {
 		graph.nodeInfo = nodeInfo;
 		graph.edgeInfo = edgeInfo;
 		return graph;
-	},*/
+	},
 	
 	//get a list of top level graphs for a given project and student
 	/*	This method returns a JSON string where it contains arrays of objects with three parameters - graphInfo, nodesInfo and edgesInfo

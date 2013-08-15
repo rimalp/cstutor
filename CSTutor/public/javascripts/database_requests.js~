@@ -354,6 +354,8 @@ function createGraph(graph, showFunction){
 				var response = eval(data);
 				graph.id = response[0].id;
 				console.log("GRAPH ID SET");
+				if(showFunction)
+					showFunction();
 		});
 	}
 	if(!currentGraph.parent){

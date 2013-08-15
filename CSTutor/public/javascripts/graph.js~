@@ -558,9 +558,6 @@ var Graph = function(){
 };
 
 Graph.prototype = {
-	getJSON: function(){
-		return {id: this.id, parent: this.parent, version: this.version, title: this.version, student: this.graphHistory.student.title, course_name: this.graphHistory.project.course.title, course_year: this.graphHistory.project.course.year, course_semester: this.graphHistory.project.course.semester};
-	},
 	addNode: function(node){
 		this.nodes[this.nodes.length] = node;
 		node.graph = this;
