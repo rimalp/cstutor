@@ -49,6 +49,50 @@ function createPrompt(prompt, project){
 		});
 }
 
+function updatePrompt(prompt, project){
+	$.post('/update_prompt',
+		{id: prompt.id, projectName: project.title, courseName: project.course.title, courseYear: project.course.year, courseSemester: project.course.semester, text: prompt.text, requiresInput: prompt.requiresInput?1:0, eventType: prompt.eventType, frequency: prompt.frequency},
+		function(data, status){
+			console.log("data: " + data);
+		});
+}
+
+function deletePrompt(prompt, project){
+	$.post('/delete_prompt',
+		{id: prompt.id},
+		function(data, status){
+			console.log("data: " + data);
+		});
+}
+
+function getResponsesForGraph(graph, graphHistory, displayFunction){
+	$.post('/responses',
+		{graphId: graph.id},
+		function(data, status){
+			console.log("data: " + data);
+			var message = eval(data);
+			for(var i=0; i<message.length; i++){
+				var prompt = graphHistory.project.getPromptWithId(message[i].promptid);
+				var response = new Response(prompt);
+				response.id = message[i].id;
+				response.graph = graph;
+				response.text = message[i].text;
+				graphHistory.addResponse(response);
+			}
+			if(displayFunction){
+				displayFunction();
+			}
+		});
+}
+
+function createResponse(response){
+	$.post('/create_response',
+		{id: response.id, promptId: response.prompt.id, graphId: response.graph.id, text: response.text},
+		function(data, status){
+			console.log("data: " + data);
+		});
+}
+
 function getTopLevelGraphsForStudentProject(course, project, student, displayFunction){
 	$.post('/graphs_top',
 		{projectName : project.title, courseName: course.title, courseYear: course.year, courseSemester: course.semester, studentEmail: student.title},
@@ -83,8 +127,16 @@ function getTopLevelGraphsForStudentProject(course, project, student, displayFun
 				}
 				student.getGraphHistoryOf(project).addGraph(graph);
 			}
-			uniqueID = -1;
-			displayFunction();
+			
+			//get responses
+			var graphHistory = student.getGraphHistoryOf(project);
+			for(var i=0; i<graphHistory.graphs.length; i++){
+				var graph = graphHistory.graphs[i];
+				getResponsesForGraph(graph, graphHistory, (i==graphHistory.graphs.length-1) ? displayFunction : false);
+			}
+			
+			if(graphHistory.graphs.length == 0)
+				displayFunction();
 		});
 }
 
@@ -177,7 +229,7 @@ function createProject(project, course){
 		});
 }
 
-function createNode(node){
+function createNode(node, showFunction){
 	var postNode = function(){
 		var nodeInfo = {x: Math.round(node.x), y: Math.round(node.y), graphId: node.graph.id, name: node.data, description: node.description, color: node.color};
 		$.post('/create_node',
@@ -186,6 +238,8 @@ function createNode(node){
 				var response = eval(data);
 				node.id = response[0].id;
 				console.log("data: " + data);
+				if(showFunction)
+					showFunction();
 		});
 	}
 	
@@ -238,13 +292,15 @@ function deleteNode(node){
 	});
 }
 
-function createEdge(edge){
+function createEdge(edge, showFunction){
 	var postEdge = function(){
 		var edgeInfo = {sourceNode: edge.sourceNode.id, destNode: edge.destNode.id, graphId: edge.sourceNode.graph.id};
 		$.post('/create_edge',
 			{"edgeInfo": edgeInfo},
 			function(data, status) {
 				console.log("data: " + data);
+			if(showFunction)
+				showFunction();
 		});
 	}
 	
@@ -284,7 +340,7 @@ function deleteEdge(edge){
 	}
 }
 
-function createGraph(graph){
+function createGraph(graph, showFunction){
 	//get top level graph
 	var currentGraph = graph;
 	
@@ -309,6 +365,8 @@ function createGraph(graph){
 				var response = eval(data);
 				graph.id = response[0].id;
 				console.log("GRAPH ID SET");
+				if(showFunction)
+					showFunction();
 		});
 	}
 	if(!currentGraph.parent){

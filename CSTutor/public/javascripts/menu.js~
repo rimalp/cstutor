@@ -124,8 +124,13 @@ Project.prototype.executeNodeFrequencyPrompts = function(student, nodeCount){
 		}
 	}
 };
-Project.prototype.getJSON = function(){
-	return {name: this.title, course_name: this.course.title, course_year: this.course.year, course_semester: this.course.semester};
+Project.prototype.getPromptWithId = function(id){
+	for(var i=0; i<this.prompts.length; i++){
+		var prompt = this.prompts[i];
+		if(prompt.id == id)
+			return prompt;
+	}
+	return false;
 };
 Project.prototype.getLinkType = function(){
 	return "Students";
@@ -157,26 +162,28 @@ var Prompt = function(text, requiresInput, eventType, frequency/*optional*/){
 	this.text = text;
 	this.requiresInput = requiresInput;
 	this.eventType = eventType;	//version, save, frequency
-	this.frequency = frequency;
+	this.frequency = frequency || 0;
 };
 Prompt.prototype = {
 	execute: function(){
 		var response = new Response(this);
-		response.versionWhenAnswered = currentGraph.version;
+		response.graph = currentGraph;
 		
 		if(this.requiresInput)
 			response.text = prompt(this.text);
 		else
 			alert(this.text);
+		createResponse(response);
 		
 		return response;
 	}
 };
 
 var Response = function(prompt){
+	this.id = -1;
 	this.prompt = prompt;
 	this.text = "";
-	this.versionWhenAnswered = 0;	//what version of the graph the student was working on when the prompt was answered
+	this.graph = false;
 }
 
 var courses = new Array();
@@ -420,7 +427,8 @@ function displayNewProject(course, project, back){
 								createPrompt(currentPrompt, project);
 							}
 							else{
-								
+								console.log("UPDATE PROMPT");
+								updatePrompt(currentPrompt, project);
 							}
 						}
 						project.title = titleInput.value;
@@ -538,7 +546,8 @@ function addNewPrompt(promptArray, index, parent){
 	deleteButton.style = "float: right;";
 	deleteButton.onclick = function(){
 					parent.removeChild(div);
-					promptArray.splice(promptArray.indexOf(prompt), 1);
+					var deletedPrompt = promptArray.splice(promptArray.indexOf(prompt), 1)[0];
+					deletePrompt(deletedPrompt);
 				};
 	div.appendChild(deleteButton);
 	
@@ -628,7 +637,7 @@ function displayDetailStudentProject(student, project, back){
 	showDetailView();
 	
 	if(!back)
-		backButtonStack.push(getButtonDiv(student.title + "'s " + project.title, function(){backButtonStack.pop(); displayDetailStudentProject(student, project, true); /*updateGraph(currentGraph);*/}));
+		backButtonStack.push(getButtonDiv(student.title + "'s " + project.title, function(){backButtonStack.pop(); contractAll(); displayDetailStudentProject(student, project, true);}));
 	setTitle(student.title + "'s " + project.title, backButtonStack[backButtonStack.length-2]);
 	
 	var displayFunction = function(){
@@ -667,6 +676,19 @@ function displayDetailStudentProject(student, project, back){
 }
 
 function newGraphFunction(){
+	clearDetailView();
+	showDetailView();
+	var div = document.createElement("div");
+	div.style = "text-align: center;";
+	var spacer = document.createElement("div");
+	spacer.style = "height: 40%;";
+	div.appendChild(spacer);
+	var h1 = document.createElement("h1");
+	h1.innerHTML = "Loading...";
+	div.appendChild(h1);
+	detail_view.appendChild(div);
+	
+	
 	var currentGraphHistory = currentStudent.getGraphHistoryOf(currentProject);
 	var newGraph = false;
 	if(currentGraphHistory.graphs.length > 0){
@@ -677,7 +699,8 @@ function newGraphFunction(){
 		currentGraphHistory.addGraph(newGraph);
 		createGraph(newGraph);
 	}
-	showGraph(newGraph);
+	
+	//showGraph(newGraph);
 	currentProject.executeNewVersionPrompts(currentStudent);
 }
 

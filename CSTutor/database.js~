@@ -135,20 +135,133 @@ Database.prototype = {
 	},
 	
 	updatePrompt: function(id, projectName, courseName, courseYear, courseSemester, text, requiresInput, eventType, frequency, callback){
-		client.query("DELETE FROM prompt WHERE id = $1", [id],
+		console.log("ID: " + id);
+		client.query("DELETE FROM prompt WHERE id=$1", [id],
 			function(err, result){
-				client.query("INSERT INTO prompt (id, projectName, courseName, courseYear, courseSemester, text, requiresInput, eventType, frequency) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
-					[id, projectName, courseName, courseYear, courseSemester, text, requiresInput, eventType, frequency],
-					function(err, result){
-						if(err){
-							callback(err);
-						}
-						else{
-							callback(null, result);
-						}
-				});
-			});
+				if(err){
+					callback(err);
+				}
+				else{
+					console.log("DELETE: " + JSON.stringify(result));
+					client.query("INSERT INTO prompt (id, projectName, courseName, courseYear, courseSemester, text, requiresInput, eventType, frequency) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+						[id, projectName, courseName, courseYear, courseSemester, text, requiresInput, eventType, frequency],
+						function(err, result){
+							if(err){
+								callback(err);
+							}
+							else{
+								console.log("INSERT: " + JSON.stringify(result));
+								callback(null, result);
+							}
+					});
+				}
+		});
 	},
+
+	deletePrompt: function(id, callback){
+		console.log("ID: " + id);
+		client.query("DELETE FROM prompt WHERE id=$1", [id],
+			function(err, result){
+				if(err){
+					callback(err);
+				}
+				else{
+					callback(null, result);
+				}
+		});
+	},
+	
+	createResponse: function(id, promptId, graphId, text, callback){
+		console.log("ID: " + id);
+		client.query("INSERT INTO response (id, promptId, graphId, text) VALUES ($1, $2, $3, $4)", [id, promptId, graphId, text],
+			function(err, result){
+				if(err){
+					callback(err);
+				}
+				else{
+					callback(null, result);
+				}
+		});
+	},
+	
+	getResponsesForGraph: function(graphId, callback){
+		client.query("SELECT * FROM response WHERE graphId=$1", [graphId],
+			function(err, result){
+				if(err){
+					callback(err);
+				}
+				else{
+					callback(null, result);
+				}
+		});
+	},
+	
+	/*getGraph: function(graphId, callback){
+		var graph = {};
+		var graphInfo = {};
+		var nodeInfo = [];
+		var edgeInfo = {};
+		
+		//get graph info
+		client.query("SELECT * FROM graph WHERE id=$1", [graphId], 
+			function(err, result){
+				if(err)
+					callback(err);
+				else{
+					graphInfo.id = result.rows[0].id;
+					graphInfo.parentNodeId = result.rows[0].parentnodeid;
+					graphInfo.version = result.rows[0].version;
+				}
+			});
+		
+		//get node info, and all subgraphs of the nodes
+		client.query("SELECT * FROM node WHERE graphId=$1" , [graphId], 
+			function(err, result){
+				if(err)
+					callback(err);
+				else{
+					for(var i=0; i<result.rows.length; i++){
+						nodeInfo[i].id = result.rows[i].id;
+						nodeInfo[i].x = result.rows[i].x;
+						nodeInfo[i].y = result.rows[i].y;
+						nodeInfo[i].graphId = result.rows[i].graphId;
+						nodeInfo[i].name = result.rows[i].name;
+						nodeInfo[i].description = result.rows[i].description;
+						
+						//get subgraph for this node
+						client.query("SELECT * FROM graph WHERE parentNodeId=$1", [nodeInfo[i].id], 
+							function(err, result){
+								if(err)
+									callback(err);
+								else{
+									if(result.rows.length > 0){
+										nodeInfo[i].subgraph = getGraph(result.rows[0].id);
+									}
+								}
+							});
+					}
+				}
+			});
+		
+		//get edge info
+		client.query("SELECT * FROM edge WHERE graphId=$1", [graphId],
+			function(err, result){
+				if(err)
+					callback(err);
+				else{
+					for(var i=0; i<result.rows.length; i++){
+						edgeInfo[i].sourceNodeId = result.rows[i].src;
+						edgeInfo[i].destNodeId = result.rows[i].dst;
+					}
+				}
+			});
+			
+		
+		graph.graphInfo = graphInfo;
+		graph.nodeInfo = nodeInfo;
+		graph.edgeInfo = edgeInfo;
+		return graph;
+	},*/
 	
 	//get a list of top level graphs for a given project and student
 	/*	This method returns a JSON string where it contains arrays of objects with three parameters - graphInfo, nodesInfo and edgesInfo
