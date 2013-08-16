@@ -194,10 +194,9 @@ Database.prototype = {
 		});
 	},
 	
-	getFullGraph: function(graphId, callback){
+	getFullGraph: function(graphIds, callback){
 		var running=1;
-		var itemlist = [];
-		itemlist[0] = graphId;
+		var itemlist = graphIds;
 		var graphlist = [];
 		
 		var launcher = function(){
@@ -211,12 +210,12 @@ Database.prototype = {
 							console.log("ERROR");
 							 callback(err);
 						}else{
-							console.log("RESULT: " + JSON.stringify(result));
+							console.log("RESULT: " + JSON.stringify(result.rows));
 							var newGraph = {};
 							var graphInfo = result.rows[0];
 							newGraph.graphInfo = graphInfo;
 							//get the edges
-							client.query("SELECT * FROM edge WHERE graphid=$1", [currentGraphId], function (err, result){
+							client.query("SELECT * FROM edge WHERE graphid=$1", [newGraph.graphInfo.id], function (err, result){
 								if(err){
 									callback(err);
 								}else{
@@ -224,10 +223,11 @@ Database.prototype = {
 									newGraph.edgeInfo = edgeInfo;
 								}					
 							});
-							client.query("SELECT * FROM node where graphid=$1", [currentGraphId], function(err, result){
+							client.query("SELECT * FROM node where graphid=$1", [newGraph.graphInfo.id], function(err, result){
 								if(err){
 									callback(err);
 								} else {
+									console.log(currentGraphId + " graph " + newGraph.graphInfo.id + "'s node results: " + JSON.stringify(result));
 									var nodeInfo = result.rows;
 									newGraph.nodeInfo = nodeInfo;
 									for(var i=0; i< result.rows.length; i++){
@@ -242,6 +242,7 @@ Database.prototype = {
 										if(err){
 											callback(err);
 										}else{
+											console.log("NEWGRAPH: " + newGraph.graphInfo.id);
 											graphlist.push(newGraph);
 											running--;
 											if(itemlist.length > 0){
@@ -263,6 +264,7 @@ Database.prototype = {
 		
 		launcher();
 	},
+	
 	getResponsesForGraph: function(graphId, callback){
 		client.query("SELECT * FROM response WHERE graphId=$1", [graphId],
 			function(err, result){
@@ -341,6 +343,28 @@ Database.prototype = {
 		graph.edgeInfo = edgeInfo;
 		return graph;
 	},*/
+	getGraphsForLabForStudentForAllVersions: function(projectName, courseName, courseYear, courseSemester, studentEmail, callback){
+		var self = this;
+		client.query("SElECT graph.* FROM graph, student_project WHERE graph.id=student_project.graphId AND "+ 
+					"graph.parentNodeId=-1 AND student_project.projectName=$1 AND student_project.courseName=$2 AND "+
+					"student_project.courseYear=$3 AND student_project.courseSemester=$4 AND student_project.email=$5",
+					[projectName, courseName, courseYear, courseSemester, studentEmail], function(err, result){
+						if(err){
+							callback(err);
+						}else{
+							var graphIds = new Array();
+							for(var i=0; i<result.rows.length; i++){
+								var graphId = result.rows[i].id;
+								graphIds.push(graphId);
+							}
+							console.log(graphIds);
+							if(graphIds.length > 0)
+								self.getFullGraph(graphIds, callback);
+							else
+								callback(null, []);
+						}
+		});
+	},
 	
 	//get a list of top level graphs for a given project and student
 	/*	This method returns a JSON string where it contains arrays of objects with three parameters - graphInfo, nodesInfo and edgesInfo
@@ -660,9 +684,10 @@ Database.prototype = {
 	},
 	
 	createEdge: function(edgeInfo, callback){
+		console.log("CREATE EDGE");
 		client.query("INSERT INTO edge VALUES($1, $2, $3)", [edgeInfo.sourceNode, edgeInfo.destNode, edgeInfo.graphId], function(err){
 			if(err){
-				callback(err);
+				callback(err);//callback(null, {rows: []}); //DOESNT GIVE AN ERROR
 			}
 			else{
 				callback(null, {rows: []});

@@ -74,8 +74,8 @@ Database.prototype = {
 	//query to get the courses for a given professor
 	getCoursesForProfessor: function(profEmail, callback){
 		var q = "SELECT * FROM course WHERE (name, year, semester) IN "+
-				"(SELECT courseName, courseYear, courseSemester FROM student_course WHERE email='"+profEmail+"')";
-		rawQuery(q, function(err, result) {
+		"(SELECT courseName, courseYear, courseSemester FROM professor_course WHERE email='"+profEmail+"')";
+		client.query(q, function(err, result) {
 			if(err){
 				callback(err);	
 			} else {
@@ -184,6 +184,77 @@ Database.prototype = {
 		});
 	},
 	
+	getFullGraph: function(graphIds, callback){
+		var running=1;
+		var itemlist = graphIds;
+		var graphlist = [];
+		
+		var launcher = function(){
+			while(running > 0 && itemlist.length > 0){
+				//console.log("running: " + running + ", list size: " + itemlist.length);
+				var currentGraphId = itemlist.pop();
+				if(currentGraphId != undefined){
+					console.log("inside if " + client);
+					client.query("SELECT * FROM graph WHERE id=$1", [currentGraphId], function (err, result){
+						if(err){
+							console.log("ERROR");
+							 callback(err);
+						}else{
+							console.log("RESULT: " + JSON.stringify(result.rows));
+							var newGraph = {};
+							var graphInfo = result.rows[0];
+							newGraph.graphInfo = graphInfo;
+							//get the edges
+							client.query("SELECT * FROM edge WHERE graphid=$1", [newGraph.graphInfo.id], function (err, result){
+								if(err){
+									callback(err);
+								}else{
+									var edgeInfo = result.rows;
+									newGraph.edgeInfo = edgeInfo;
+								}					
+							});
+							client.query("SELECT * FROM node where graphid=$1", [newGraph.graphInfo.id], function(err, result){
+								if(err){
+									callback(err);
+								} else {
+									console.log(currentGraphId + " graph " + newGraph.graphInfo.id + "'s node results: " + JSON.stringify(result));
+									var nodeInfo = result.rows;
+									newGraph.nodeInfo = nodeInfo;
+									for(var i=0; i< result.rows.length; i++){
+										client.query("SELECT * FROM graph WHERE parentNodeId=$1", [result.rows[i].id], function(err, result){
+											if(result.rows.length > 0){
+												itemlist.push(result.rows[0].id);
+												running++;
+											}
+										});
+									}
+									client.query("SELECT version()", function(err, result){
+										if(err){
+											callback(err);
+										}else{
+											console.log("NEWGRAPH: " + newGraph.graphInfo.id);
+											graphlist.push(newGraph);
+											running--;
+											if(itemlist.length > 0){
+												launcher();
+											}
+											else if(running == 0){
+												console.log("GRAPHLIST: " + JSON.stringify(graphlist));
+												callback(null, graphlist);
+											}
+										}
+									});
+								}
+							});
+						}
+					});
+				}
+			}
+		}
+		
+		launcher();
+	},
+	
 	getResponsesForGraph: function(graphId, callback){
 		client.query("SELECT * FROM response WHERE graphId=$1", [graphId],
 			function(err, result){
@@ -196,79 +267,27 @@ Database.prototype = {
 		});
 	},
 	
-	getFullGraph: function(graphId, callback){
-		var running
-		
-		while(running > 0){
-			
-		}
-	},
-	
-	getGraph: function(graphId, callback){
-		var graph = {};
-		var graphInfo = {};
-		var nodeInfo = [];
-		var edgeInfo = {};
-		
-		//get graph info
-		client.query("SELECT * FROM graph WHERE id=$1", [graphId], 
-			function(err, result){
-				if(err)
-					callback(err);
-				else{
-					graphInfo.id = result.rows[0].id;
-					graphInfo.parentNodeId = result.rows[0].parentnodeid;
-					graphInfo.version = result.rows[0].version;
-				}
-			});
-		
-		//get node info, and all subgraphs of the nodes
-		client.query("SELECT * FROM node WHERE graphId=$1" , [graphId], 
-			function(err, result){
-				if(err)
-					callback(err);
-				else{
-					for(var i=0; i<result.rows.length; i++){
-						nodeInfo[i].id = result.rows[i].id;
-						nodeInfo[i].x = result.rows[i].x;
-						nodeInfo[i].y = result.rows[i].y;
-						nodeInfo[i].graphId = result.rows[i].graphId;
-						nodeInfo[i].name = result.rows[i].name;
-						nodeInfo[i].description = result.rows[i].description;
-						
-						//get subgraph for this node
-						client.query("SELECT * FROM graph WHERE parentNodeId=$1", [nodeInfo[i].id], 
-							function(err, result){
-								if(err)
-									callback(err);
-								else{
-									if(result.rows.length > 0){
-										nodeInfo[i].subgraph = getGraph(result.rows[0].id);
-									}
-								}
-							});
-					}
-				}
-			});
-		
-		//get edge info
-		client.query("SELECT * FROM edge WHERE graphId=$1", [graphId],
-			function(err, result){
-				if(err)
-					callback(err);
-				else{
-					for(var i=0; i<result.rows.length; i++){
-						edgeInfo[i].sourceNodeId = result.rows[i].src;
-						edgeInfo[i].destNodeId = result.rows[i].dst;
-					}
-				}
-			});
-			
-		
-		graph.graphInfo = graphInfo;
-		graph.nodeInfo = nodeInfo;
-		graph.edgeInfo = edgeInfo;
-		return graph;
+	getGraphsForLabForStudentForAllVersions: function(projectName, courseName, courseYear, courseSemester, studentEmail, callback){
+		var self = this;
+		client.query("SElECT graph.* FROM graph, student_project WHERE graph.id=student_project.graphId AND "+ 
+					"graph.parentNodeId=-1 AND student_project.projectName=$1 AND student_project.courseName=$2 AND "+
+					"student_project.courseYear=$3 AND student_project.courseSemester=$4 AND student_project.email=$5",
+					[projectName, courseName, courseYear, courseSemester, studentEmail], function(err, result){
+						if(err){
+							callback(err);
+						}else{
+							var graphIds = new Array();
+							for(var i=0; i<result.rows.length; i++){
+								var graphId = result.rows[i].id;
+								graphIds.push(graphId);
+							}
+							console.log(graphIds);
+							if(graphIds.length > 0)
+								self.getFullGraph(graphIds, callback);
+							else
+								callback(null, []);
+						}
+		});
 	},
 	
 	//get a list of top level graphs for a given project and student
@@ -441,12 +460,14 @@ Database.prototype = {
 	},
 
 	createCourse: function(name, year, semester, professorEmail, callback){
+		console.log("New Course Details: " + name + " " + year + " " + semester + " " + professorEmail);
 		client.query("SELECT year FROM course WHERE name=$1 AND year=$2 AND semester=$3",[name, year, semester], 
 		function(err, result){
 			if(err){
 				callback(err);
-			}else if(result.rows.rowCount ==0){
+			}else if(result.rows.length ==0){
 				//insert
+				console.log("course insert");
 				client.query("INSERT INTO course(name, year, semester) VALUES($1, $2, $3)", [name, year, semester],
 				function(err, result){
 					if(err){
@@ -454,33 +475,40 @@ Database.prototype = {
 					}else{
 						//insert into professor_course table
 						client.query("INSERT INTO professor_course VALUES($1, $2, $3, $4)", [professorEmail, name, year, semester],
-							function(err, callback){
+							function(err){
 								if(err){
 									callback(err);
 								}else{
-									callback(null);
+									callback(null, {rows:[{"exists":false}]});
 								}
 							});
 					}
 				});
 			}else{
-				//update
-				client.query("UPDATE course SET name=$1, year=$2, semester=#3  WHERE name=#1 AND year=$2 AND semester=$3",
+				
+				callback(null, {rows:[{"exists":true}]});
+				
+				/*
+				//update will not work
+				console.log("course update");
+				client.query("UPDATE course SET name=$1, year=$2, semester=$3  WHERE name=$1 AND year=$2 AND semester=$3",
 				 [name, year, semester], function(err){
 					if(err){
 						callback(err);
 					}else{
-						client.query("UPDATE professor_course SET email=$1, courseName=$2, courseYear=$3, courseSemester=$4 WHERE "+
-							          "email=$1, courseName=$2, courseYear=$3, courseSemester=$4", [professorEmail, name, year, semester],
-							          function(req, res){
+						console.log
+						client.query("UPDATE professor_course SET email=$1, coursename=$2, courseyear=$3, coursesemester=$4 WHERE "+
+							          "email=$1, coursename=$2, courseyear=$3, coursesemester=$4", [professorEmail, name, year, semester],
+							          function(err){
 							          	if(err){
 							          		callback(err);
 							          	}else{
-							          		callback(null);
+							          		callback(null, {rows:[{"exists":false}]});
 							          	}
 						});
 					}
 				});
+				* */
 			}
 		});
 	},
@@ -576,9 +604,10 @@ Database.prototype = {
 	},
 	
 	createEdge: function(edgeInfo, callback){
+		console.log("CREATE EDGE");
 		client.query("INSERT INTO edge VALUES($1, $2, $3)", [edgeInfo.sourceNode, edgeInfo.destNode, edgeInfo.graphId], function(err){
 			if(err){
-				callback(err);
+				callback(null, {rows: []}); //DOESNT GIVE AN ERROR
 			}
 			else{
 				callback(null, {rows: []});
