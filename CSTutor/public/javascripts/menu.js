@@ -188,20 +188,20 @@ var Response = function(prompt){
 
 var courses = new Array();
 getCoursesForStudent({title: 'kellerj@lafayette.edu'},
-function(data, status){
-	var response = eval(data);
-	for(var i=0; i<response.length; i++){
-		var course = new Course(response[i].name);
-		course.year = response[i].year;
-		course.semester = response[i].semester;
-		courses[i] = course;
+	function(data, status){
+		var response = eval(data);
+		for(var i=0; i<response.length; i++){
+			var course = new Course(response[i].name);
+			course.year = response[i].year;
+			course.semester = response[i].semester;
+			courses[i] = course;
 		
-		//get projects
-		getProjectsForCourse(course, getProjectsForCourseCallback(course));
+			//get projects
+			getProjectsForCourse(course, getProjectsForCourseCallback(course));
 		
-		//get students
-		getStudentsForCourse(course, getStudentsForCourseCallback(course));
-	}
+			//get students
+			getStudentsForCourse(course, getStudentsForCourseCallback(course));
+		}
 });
 
 function getProjectsForCourseCallback(course/*, last*/){
@@ -349,7 +349,6 @@ function getGraphOnClickFunction(li, ul, graph){
 
 var currentFocus = false;
 function getSubMenuOnClickFunction(li, ul, item){
-	//console.log(item.title + " " + item.getLink() + " " + currentFocus.title);
 	var link = item.getLink();
 	return function(e){
 		e.stopPropagation();
@@ -423,11 +422,9 @@ function displayNewProject(course, project, back){
 						for(var i=0; i<project.prompts.length; i++){
 							var currentPrompt = project.prompts[i];
 							if(currentPrompt.id <= 0){
-								console.log(project.course.title);
 								createPrompt(currentPrompt, project);
 							}
 							else{
-								console.log("UPDATE PROMPT");
 								updatePrompt(currentPrompt, project);
 							}
 						}
@@ -474,7 +471,7 @@ function createNewCourse(){
 	var newCourse = {}
 	newCourse.title = $('#course_name').val();
 	newCourse.year = $('#course_year').val();
-	newCourse.semester = $('#course_semester').val()
+	newCourse.semester = $('#course_semester').val();
 	console.log("values: " + newCourse.title + "  " + newCourse.year + "  " + newCourse.semester);
 	createCourse(newCourse, professor, function(response){
 		  if(response[0].exists){
@@ -682,7 +679,7 @@ function displayDetailStudentProject(student, project, back){
 	showDetailView();
 	
 	if(!back)
-		backButtonStack.push(getButtonDiv(student.title + "'s " + project.title, function(){backButtonStack.pop(); contractAll(); displayDetailStudentProject(student, project, true);}));
+		backButtonStack.push(getButtonDiv(/*student.title + "'s " + project.title*/"Done", function(){backButtonStack.pop(); contractAll(); displayDetailStudentProject(student, project, true);}));
 	setTitle(student.title + "'s " + project.title, backButtonStack[backButtonStack.length-2]);
 	
 	var displayFunction = function(){
@@ -742,7 +739,7 @@ function newGraphFunction(){
 	else{
 		newGraph = new Graph();
 		currentGraphHistory.addGraph(newGraph);
-		createGraph(newGraph);
+		createGraph(newGraph, function(){showGraph(newGraph);});
 	}
 	
 	//showGraph(newGraph);
@@ -814,7 +811,6 @@ function getCourseToStudentOnClickMaker(course){
 function getProjectToStudentOnClickMaker(project){
 	return function projectToStudentOnClickMaker(student){
 		return function(){
-			console.log(student.title + " " + project.title);
 			displayDetailStudentProject(student, project);
 		};
 	}

@@ -17,7 +17,7 @@ var express = require('express')
 console.log(path.join(__dirname));
 app.configure(function(){
 	// all environments
-	app.set('port', process.env.PORT || 3018);
+	app.set('port', process.env.PORT || 3000);
 	app.set('views', __dirname + '/views'); //__dirname is the curent dir
 	// app.set('view engine', 'html'); //default rendering is jade
 	app.engine('html', require('ejs').renderFile);
@@ -166,11 +166,11 @@ var database = new db.Database(client);
 
 
 console.log("database object created");
-
+/*
 database.getFullGraph(1, function(err, result){
 	console.log("ERROR: " + err + " RESULT: " + result);
 });
-
+*/
 
 
 //==============  GET requests for database queries ===============================
@@ -246,6 +246,21 @@ app.post('/create_response', function(req, res){
 	database.createResponse(req.body.id, req.body.promptId, req.body.graphId, req.body.text, function(err, result){
 		sendPostResponse(req, res, err, result);
 	});
+});
+
+app.post('/graph_full', function(req, res){
+	database.getGraphsForLabForStudentForAllVersions(req.body.projectName, req.body.courseName, req.body.courseYear,
+		req.body.courseSemester, req.body.studentEmail, function(err, result){
+			//sendPostResponse(req, res, err, result);
+			console.log("RESULT: " + result);
+			if(err){
+				res.writeHead(500, { 'Content-Type': 'text/plain' });
+				res.end("Error reading the database");
+			}else{
+				res.writeHead(200, { 'Content-Type': 'text/plain' });
+				res.end(JSON.stringify(result));
+			}
+		});
 });
 
 //get top level graphs for a course>lab>student. 

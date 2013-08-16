@@ -4,6 +4,13 @@ function getCoursesForStudent(student, callback){
 		{email: student.title},
 		callback);
 }
+function getCoursesForProfessor(professor, callback){
+	$.post('/courses_professor',
+		{email: professor.title},
+		function(data, status){
+			callback(data, status);
+		});
+}
 
 function getProjectsForCourse(course, callback){
 	$.post('/projects',
@@ -21,7 +28,6 @@ function getPromptsForProject(project){
 	$.post('/prompts',
 		{projectName: project.title, courseName: project.course.title, courseYear: project.course.year, courseSemester: project.course.semester},
 		function(data, status){
-			console.log("data: " + data);
 			var response = eval(data);
 			for(var i=0; i<response.length; i++){
 				var prompt = new Prompt(response[i].text, response[i].requiresinput==0?false:true, response[i].eventtype, response[i].frequency);
@@ -35,7 +41,6 @@ function createPrompt(prompt, project){
 	$.post('/create_prompt',
 		{projectName: project.title, courseName: project.course.title, courseYear: project.course.year, courseSemester: project.course.semester, text: prompt.text, requiresInput: prompt.requiresInput?1:0, eventType: prompt.eventType, frequency: prompt.frequency},
 		function(data, status){
-			console.log("data: " + data);
 			var response = eval(data);
 			prompt.id = response[0].id;
 		});
@@ -45,7 +50,6 @@ function updatePrompt(prompt, project){
 	$.post('/update_prompt',
 		{id: prompt.id, projectName: project.title, courseName: project.course.title, courseYear: project.course.year, courseSemester: project.course.semester, text: prompt.text, requiresInput: prompt.requiresInput?1:0, eventType: prompt.eventType, frequency: prompt.frequency},
 		function(data, status){
-			console.log("data: " + data);
 		});
 }
 
@@ -53,7 +57,6 @@ function deletePrompt(prompt, project){
 	$.post('/delete_prompt',
 		{id: prompt.id},
 		function(data, status){
-			console.log("data: " + data);
 		});
 }
 
@@ -61,7 +64,6 @@ function getResponsesForGraph(graph, graphHistory, displayFunction){
 	$.post('/responses',
 		{graphId: graph.id},
 		function(data, status){
-			console.log("data: " + data);
 			var message = eval(data);
 			for(var i=0; i<message.length; i++){
 				var prompt = graphHistory.project.getPromptWithId(message[i].promptid);
@@ -81,10 +83,91 @@ function createResponse(response){
 	$.post('/create_response',
 		{id: response.id, promptId: response.prompt.id, graphId: response.graph.id, text: response.text},
 		function(data, status){
-			console.log("data: " + data);
 		});
 }
 
+function getTopLevelGraphsForStudentProject(course, project, student, displayFunction){
+	$.post('/graph_full',
+		{projectName : project.title, courseName: course.title, courseYear: course.year, courseSemester: course.semester, studentEmail: student.title},
+		function(data, status){
+			var response = eval(data);
+			
+			var graphs = new Array();
+			var nodes = new Array();
+			for(var i=0; i<response.length; i++){
+				var graphInfo = response[i].graphInfo;
+				var nodeInfo = response[i].nodeInfo;
+				var edgeInfo = response[i].edgeInfo;
+				
+				var graph = new Graph();
+				graph.id = graphInfo.id;
+				if(graphInfo.parentnodeid<=0){
+					graph.parent = false;
+					student.getGraphHistoryOf(project).addGraph(graph);
+				}
+				else{
+					graph.parent = graphInfo.parentnodeid;
+				}
+				graph.version = graphInfo.version;
+				
+				for(var j=0; nodeInfo && j<nodeInfo.length; j++){
+					var node = new Node(nodeInfo[j].name, nodeInfo[j].description);
+					node.id = nodeInfo[j].id;
+					node.id = nodeInfo[j].id;
+					node.x = nodeInfo[j].x;
+					node.y = nodeInfo[j].y;
+					node.owner = graph.parent;
+					node.color = nodeInfo[j].color;
+					graph.addNode(node);
+					nodes.push(node);
+				}
+				
+				for(var j=0; edgeInfo && j<edgeInfo.length; j++){
+					var source = graph.getNodeWithId(edgeInfo[j].src);
+					var destination = graph.getNodeWithId(edgeInfo[j].dst);
+					if(source && destination)
+						source.addChild(destination);
+				}
+				graphs.push(graph);
+			}
+			
+			for(var i=0; i<graphs.length; i++){
+				var graph = graphs[i];
+				if(graph.parent > 0){
+					for(var j=0; j<nodes.length; j++){
+						var node = nodes[j];
+						if(graph.parent == node.id){
+							graph.parent = node;
+							node.subgraph = graph;
+						}
+					}
+				}
+			}
+			
+			for(var i=0; i<nodes.length; i++){
+				var node = nodes[i];
+				if(node.owner > 0){
+					for(j=0; j<nodes.length; j++){
+						var node2 = nodes[j];
+						if(node.owner == node2.id){
+							node.owner = node2;
+						}
+					}
+				}
+			}
+			
+			//get responses
+			var graphHistory = student.getGraphHistoryOf(project);
+			for(var i=0; i<graphHistory.graphs.length; i++){
+				var graph = graphHistory.graphs[i];
+				getResponsesForGraph(graph, graphHistory, (i==graphHistory.graphs.length-1) ? displayFunction : false);
+			}
+			
+			if(graphHistory.graphs.length == 0)
+				displayFunction();
+		});
+}
+/*
 function getTopLevelGraphsForStudentProject(course, project, student, displayFunction){
 	$.post('/graphs_top',
 		{projectName : project.title, courseName: course.title, courseYear: course.year, courseSemester: course.semester, studentEmail: student.title},
@@ -131,15 +214,12 @@ function getTopLevelGraphsForStudentProject(course, project, student, displayFun
 				displayFunction();
 		});
 }
-
+*/
 function getSubGraph(parentNode, project, student, displayFunction){
-	console.log("getSubGraph called");
 	$.post('/graph',
 		{parentNodeId: parentNode.id},
 		function(data, status){
-			console.log("subgraph Data: " + data);
 			var response = eval("[" + data + "]"); //got invalid label error if data wasn't an array
-			console.log(response.length);
 			for(var j=0; j<response.length; j++){
 				var graphInfo = response[j].graphInfo;
 				//console.log(JSON.stringify(graphInfo));
@@ -148,13 +228,11 @@ function getSubGraph(parentNode, project, student, displayFunction){
 			
 				var graph = new Graph();
 				graph.id = (graphInfo) ? (graphInfo.id || -1) : -1;
-				console.log("Graph id: " + graph.id);
 				graph.parent = parentNode;
 				graph.version = parentNode.graph.version;
 			
 				for(var i=0; nodeInfo && i<nodeInfo.length; i++){
 					var node = new Node(nodeInfo[i].name, nodeInfo[i].description);
-					console.log("nodeinfo: " + JSON.stringify(nodeInfo[i]));
 					node.id = nodeInfo[i].id;
 					node.x = nodeInfo[i].x;
 					node.y = nodeInfo[i].y;
@@ -182,7 +260,6 @@ function createProfessor(professor){
 	$.post('/create_professor',
 		{email: professor.title, lastName: professor.lastName, firstName: professor.firstName, password: professor.password},
 		function(data, status) {
-		  console.log("Data: " + data + "\nStatus: " + status);
 		});
 }
 
@@ -190,15 +267,15 @@ function createStudent(student){
 	$.post('/create_professor',
 		{email: student.title, lastName: student.lastName, firstName: student.firstName, password: student.password},
 		function(data, status) {
-		  console.log("Data: " + data + "\nStatus: " + status);
 		});
 }
 
-function createCourse(course, professor){
+function createCourse(course, professor, callback){
 	$.post('/create_course',
-		{courseName: course.title, courseYear: course.year, courseSemester: course.semester, professorEmail: professer.title},
+		{courseName: course.title, courseYear: course.year, courseSemester: course.semester, professorEmail: professor.title},
 		function(data, status) {
-		  console.log("Data: " + data + "\nStatus: " + status);
+		  var response = eval(data);
+		  callback(response); //calls the callback function inside menu.js createNewCourse() method		  
 		});
 }
 
@@ -206,7 +283,6 @@ function addStudents(course, student){
 	$.post('/add_students',
 		{courseName: course.title, courseYear: course.year, courseSemester: course.semester, studentEmail: student.email},
 		function(data, status) {
-		  console.log("Data: " + data + "\nStatus: " + status);
 		});
 }
 
@@ -214,7 +290,6 @@ function createProject(project, course){
 	$.post('/create_project',
 		{projectName: project.title, projectDescription: "", courseName: course.title, courseYear: course.year, courseSemester: course.semester},
 		function(data, status) {
-		  console.log("Data: " + data + "\nStatus: " + status);
 		});
 }
 
@@ -226,14 +301,12 @@ function createNode(node, showFunction){
 			function(data, status) {
 				var response = eval(data);
 				node.id = response[0].id;
-				console.log("data: " + data);
 				if(showFunction)
 					showFunction();
 		});
 	}
 	
 	
-	console.log("graphid: " + node.graph.id);
 	if(node.graph.id > 0){
 		postNode();
 	}
@@ -253,18 +326,15 @@ function updateNode(node){
 		$.post('/update_node',
 			{"nodeInfo": nodeInfo},
 			function(data, status) {
-				console.log("data: " + data);
 		});
 	}
 	
 	if(node.id > 0 && node.graph.id > 0){
-		console.log("update");
 		postUpdateNode();
 	}
 	else{
 		var interval = setInterval(500, function(){
 			if(node.id > 0 && node.graph.id > 0){
-				console.log("update in interval");
 				postUpdateNode();
 				clearInterval(interval);
 			}
@@ -277,7 +347,7 @@ function deleteNode(node){
 	$.post('/delete_node',
 		{"nodeInfo": nodeInfo},
 		function(data, status) {
-			console.log("data: " + data);
+			
 	});
 }
 
@@ -287,9 +357,8 @@ function createEdge(edge, showFunction){
 		$.post('/create_edge',
 			{"edgeInfo": edgeInfo},
 			function(data, status) {
-				console.log("data: " + data);
-			if(showFunction)
-				showFunction();
+				if(showFunction)
+					showFunction();
 		});
 	}
 	
@@ -299,8 +368,8 @@ function createEdge(edge, showFunction){
 	else{
 		var interval = setInterval(function(){
 			if(edge.sourceNode.id > 0 && edge.destNode.id > 0){
-				postEdge();
 				clearInterval(interval);
+				postEdge();
 			}
 		}, 500);
 	}
@@ -312,7 +381,6 @@ function deleteEdge(edge){
 		$.post('/delete_edge',
 			{"edgeInfo": edgeInfo},
 			function(data, status) {
-				console.log("data: " + data);
 		});
 	}
 	
@@ -350,10 +418,8 @@ function createGraph(graph, showFunction){
 		$.post('/create_graph',
 			reqData,
 			function(data, status) {
-				console.log("data: " + data);
 				var response = eval(data);
 				graph.id = response[0].id;
-				console.log("GRAPH ID SET");
 				if(showFunction)
 					showFunction();
 		});
@@ -367,7 +433,6 @@ function createGraph(graph, showFunction){
 		}
 		else{
 			var interval = setInterval(function(){
-				console.log("parent id not set");
 				if(currentGraph.parent.id > 0){
 					postGraph();
 					clearInterval(interval);
@@ -389,7 +454,6 @@ function updateGraph(graph, delayedCallback){
 		var edge = graph.edges[i];
 		edgeArray[edgeArray.length] = {sourceNode: edge.sourceNode.id, destNode: edge.destNode.id};
 	}
-	console.log(JSON.stringify(edgeArray));
 	for(var i=0; i<graph.removedNodes.length; i++){
 		var node = graph.removedNodes[i];
 		if(node.id > 0)
@@ -415,10 +479,9 @@ function updateGraph(graph, delayedCallback){
 	$.post('/create_graph',
 		reqData,
 		function(data, status) {
-			console.log("data: " + data);
 			var maxId = eval(data)[0].maxnodeid;
 			graph.id = eval(data)[0].newGraphId;
-			console.log("maxId: "  + maxId + " " + graph.id);
+			
 			for(var i=0; i<graph.nodes.length; i++){
 				var node = graph.nodes[i];
 				if(node.id < 0){

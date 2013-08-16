@@ -28,7 +28,6 @@ var onload = function(){
 	background.attr({fill: "white", stroke: "black"});
 	background.dblclick(function(){
 			if(focusNode){
-				console.log("update graph");
 				//updateGraph(currentGraph);
 				
 				focusNode.contract();
@@ -345,8 +344,7 @@ Node.prototype = {
 		var edge = new Edge(this, node);//this.r.connection(this.bottom, node.top, {directed: true});
 		this.edges[this.edges.length] = edge;
 		node.edges[node.edges.length] = edge;
-		this.graph.edges[this.graph.edges.length] = edge;	
-		createEdge(edge);
+		this.graph.edges[this.graph.edges.length] = edge;
 		return edge;
 	},
 	drawEdges: function(){
@@ -358,7 +356,9 @@ Node.prototype = {
 		var selfRef = this;
 		return function(e){
 			if(firstNode && selfRef.responsive){
-				firstNode.addChild(selfRef).show();
+				var edge = firstNode.addChild(selfRef);
+				edge.show();
+				createEdge(edge);
 				updateMiniMap();
 				firstNode.bottom.animate({fill: "black", stroke: "black"}, 250);
 				firstNode = false;
@@ -382,26 +382,33 @@ Node.prototype = {
 		
 		return function(e){
 			if(!focusNode.subgraph ||focusNode.subgraph.contains(selfRef.id)){
-				console.log("double clicked");
 				focusNode = selfRef;
 				centerX = selfRef.body.attr('cx');	
 				centerY = selfRef.body.attr('cy');
 				uniqueID = -1;
 				
-				//save current graph
-				getSubGraph(selfRef, currentProject, currentStudent, function(data, status){
+				if(!selfRef.subgraph){
+					selfRef.subgraph = new Graph();
+					selfRef.subgraph.title = selfRef.data + "'s subgraph";
+					selfRef.subgraph.topLevel = false;
+					selfRef.subgraph.parent = selfRef;
+					createGraph(selfRef.subgraph);
+				}
+				currentGraph = selfRef.subgraph;
+				selfRef.expand();
+				/*getSubGraph(selfRef, currentProject, currentStudent, function(data, status){
 					console.log("data: " + data);
 			
-					/*if(!selfRef.subgraph){
+					if(!selfRef.subgraph){
 						selfRef.subgraph = new Graph();
 						selfRef.subgraph.title = selfRef.data + "'s subgraph";
 						selfRef.subgraph.topLevel = false;
 						selfRef.subgraph.parent = selfRef;
-					}*/
+					}
 					currentGraph = selfRef.subgraph;
 
 					selfRef.expand();
-				});
+				});*/
 			}
 		};
 	},
@@ -605,7 +612,6 @@ Graph.prototype = {
 		cloneGraph.id = -1;
 		if(!owner){
 			this.graphHistory.addGraph(cloneGraph);
-			console.log("added top level clone graph");
 			
 			deepestSubgraph = this.getDeepestSubgraph();
 			topLevel = cloneGraph;
@@ -615,7 +621,6 @@ Graph.prototype = {
 		
 		var showFunction = function(){
 			showGraph(topLevel);
-			console.log("SHOW GRAPH NOW");
 		};
 		
 		if(this == deepestSubgraph && this.nodes.length == 0)
@@ -640,16 +645,18 @@ Graph.prototype = {
 				cloneNode.subgraph = current.subgraph.clone(cloneNode, cloneGraph.version, deepestSubgraph, topLevel);
 			}
 		}
+		
 		for(var i=0; i<this.nodes.length; i++){
 			var current = this.nodes[i];
 			var currentClone = cloneGraph.nodes[i];
 			for(var j=0; j<current.children.length; j++){
 				var currentChild = current.children[j];
+				//console.log("source: " + currentClone.id + " " + cloneGraph.nodes[this.getIndexOfNode(currentChild)].id);
 				currentClone.addChild(cloneGraph.nodes[this.getIndexOfNode(currentChild)]);
 			}
 		}
 		
-		for(var i=0; i<cloneGraph.edges.length; i++){
+		for(var i=0; i<cloneGraph.edges.length; i++){			//THERE IS A PROBLEM SOMEWHERE WITH createEdge being called more than once
 			if(this == deepestSubgraph && i==this.edges.length-1)
 				createEdge(cloneGraph.edges[i], showFunction);
 			else
@@ -690,31 +697,6 @@ Graph.prototype = {
 		}
 		return false;
 	}
-};
-
-function sendGraph(graph){
-	var graphInput = document.getElementById("graph_input");
-	var nodeInput = document.getElementById("node_input");
-	var edgeInput = document.getElementById("edge_input");
-	
-	graphInput.value = JSON.stringify(graph.getJSON());
-	var nodeArray = [];
-	for(var i=0; i<graph.nodes.length; i++){
-		nodeArray[nodeArray.length] = graph.nodes[i].getJSON();
-		//nodeInput.value += JSON.stringify(graph.nodes[i].getJSON());
-	}
-	nodeInput.value = JSON.stringify(nodeArray);
-	
-	var edgeArray = [];
-	for(var i=0; i<graph.edges.length; i++){
-		edgeArray[edgeArray.length] = graph.edges[i].getJSON();
-		//edgeInput.value += JSON.stringify(graph.edges[i].getJSON());
-	}
-	edgeInput.value = JSON.stringify(edgeArray);
-	
-	/*$.post('/graph', {graph: graph, function(data, status) {
-			  alert("Data: " + data + "\nStatus: " + status);
-			});*/
 };
 
 
