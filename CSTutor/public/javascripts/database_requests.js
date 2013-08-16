@@ -213,9 +213,9 @@ function createCourse(course, professor, callback){
 		});
 }
 
-function addStudents(course, student){
+function addStudents(course, email){
 	$.post('/add_students',
-		{courseName: course.title, courseYear: course.year, courseSemester: course.semester, studentEmail: student.email},
+		{ studentEmail: email, courseName: course.title, courseYear: course.year, courseSemester: course.semester},
 		function(data, status) {
 		  console.log("Data: " + data + "\nStatus: " + status);
 		});

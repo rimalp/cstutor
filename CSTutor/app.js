@@ -167,9 +167,11 @@ var database = new db.Database(client);
 
 console.log("database object created");
 
+/*
 database.getFullGraph(1, function(err, result){
 	console.log("ERROR: " + err + " RESULT: " + result);
 });
+* */
 
 
 
@@ -208,6 +210,15 @@ app.post('/projects', function(req, res){
 //get all the students request body params - courseName, courseYear, courseSemester
 app.post('/students', function(req, res){
 	database.getStudentsForCourse(req.body.courseName, req.body.courseYear, req.body.courseSemester, function(err, result){
+		sendPostResponse(req, res, err, result);
+	});
+});
+
+//get all the students in the db
+app.post('/all_students', function(req, res){
+	console.log("all students called");
+	database.getAllStudents(function(err, result){
+		console.log("All students fetched: " + JSON.stringify(result.rows));
 		sendPostResponse(req, res, err, result);
 	});
 });
@@ -280,10 +291,8 @@ app.post('/graph', function(req, res){
 });
 
 //params:{}
-app.post('/allStudents', function(req, res){
-	client.query("SELECT * FROM student", function(err, result){
-		sendPostResponse(req, res, err, result);		
-	});
+app.post('/all_students', function(req, res){
+	
 });
 //params: {email, password}
 app.post('/validate_login', function(req, res){
@@ -311,6 +320,12 @@ app.post('/register', function(req, res){
 	});
 });
 
+app.post('/students_all', function(req, res){
+	console.log("getting students-----");
+	database.getAllStudents(function(err, result){
+		sendPostResponse(req, res, err, result);		
+	});
+});
 
 //for testing purposes
 /*

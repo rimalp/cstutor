@@ -94,16 +94,16 @@
 					if(response.success){
 						document.getElementById('error_message').setAttribute('style', 'color: green');
 						document.getElementById('error_message').innerHTML = 'Logged In!';
-						$.cookie("email", response.rows[0].email);
-						$.cookie("password", response.rows[0].password);
-						$.cookie("firstName", response.rows[0].firstname);
-						$.cookie("lastName", response.rows[0].lastname);
+						$.cookie("email", response.rows[0].email, {path: '/'});
+						$.cookie("password", response.rows[0].password, {path: '/'});
+						$.cookie("firstName", response.rows[0].firstname, {path: '/'});
+						$.cookie("lastName", response.rows[0].lastname, {path: '/'});
 						if(response.rows.isAdmin){
-							$.cookie("mode", "admin");
+							$.cookie("mode", "admin", {path: '/'});
 						}else{
-							$.cookie("mode", "student");
+							$.cookie("mode", "student", {path: '/'});
 						}
-						alert("cookie.user set to: " + $.cookie("email"));
+						//alert("cookie.user set to: " + $.cookie("email"));
 						//load the home page of the user
 						window.location.href = "/";
 					}

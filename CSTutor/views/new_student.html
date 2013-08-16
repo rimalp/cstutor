@@ -1,17 +1,94 @@
-
+<!DOCTYPE html>
 <html>
 
 <head>
-	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 	<script src="/jquery.cookie.js"></script>
 	<link href="../bootstrap/css/bootstrap.css" rel="stylesheet">
 	<link href="../bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
-	
 	<script language='javascript'>
+	
+		function split( val ) {
+		  return val.split( /,\s*/ );
+		}
 		
-		$(document).ready(function initNewStudentPage(){
-		   $('#add_student_header').text("test");
-		   console.log("initnewpage called");
+		var extractLast = function( term ) {
+		  return split( term ).pop();
+		}
+		
+		var getEmail = function(str){
+			var regExp = /\(([^)]+)\)/;
+			return regExp.exec(str)[1];
+		}
+		
+		function printList(){
+			var vals = split($('#student_tags').val());
+			vals.pop();
+			console.log("VALS:: " + JSON.stringify(vals));
+			var emails = [];
+			for(var i=0; i<vals.length; i++){
+				emails[emails.length] = getEmail(vals[i]);
+			}
+			addNewStudent(emails);
+			document.getElementById('add_student_msg').innerHTML = "Students successfully added!";
+		}
+		
+	</script>
+	<script language='javascript'>
+		var availableTags = [];
+		$(document).ready(
+		
+		function initNewStudentPage(){
+		   //populate the list with students 
+		   $.post('/students_all', {}, function(data, status){
+				console.log("All students list: " + data + "\nStatus: " + status);
+				var response = JSON.parse(data);
+				//prepare the list
+				
+				for(var i=0;i<response.length; i++){
+					availableTags[availableTags.length] = response[i].name;
+				}
+				console.log(JSON.stringify(availableTags));
+			});
+			
+			
+		  
+		
+			
+		 
+		 
+			$( "#student_tags" )
+			  // don't navigate away from the field on tab when selecting an item
+			  .bind( "keydown", function( event ) {
+				if ( event.keyCode === $.ui.keyCode.TAB &&
+					$( this ).data( "ui-autocomplete" ).menu.active ) {
+				  event.preventDefault();
+				}
+			  })
+			  .autocomplete({
+					minLength: 0,
+					source: function( request, response ) {
+					  // delegate back to autocomplete, but extract the last term
+					  response( $.ui.autocomplete.filter(
+						availableTags, extractLast( request.term ) ) );
+					},
+					focus: function() {
+					  // prevent value inserted on focus
+					  return false;
+					},
+					select: function( event, ui ) {
+					  var terms = split( this.value );
+					  // remove the current input
+					  terms.pop();
+					  // add the selected item
+					  terms.push( ui.item.value );
+					  // add placeholder to get the comma-and-space at the end
+					  terms.push( "" );
+					  this.value = terms.join( ", " );
+					  return false;
+					}
+				});
+				
+		  
 		});
 		
 	</script>
@@ -19,14 +96,20 @@
 
 <body>
 	<p><h3 id="add_student_header">Student Addition</h3></p><br>
-		
+	
+	<div class="ui-widget">
+	  <label for="student_tags">Type student names separated by comma:</label>
+	  <textarea id="student_tags" class="span8" style="resize:vertical"/>
+	</div>
 	  <!-- <label>Student Name: </label>  
-	  <input id="student_email" type="text" class="span3" placeholder="example: CS150"> -->  
+	  <input id="student_email" type="text" class="span3" placeholder="example: CS150"> 
 	  <label>Registered Students (Control/Command + Click): </label>  
 	  <select id="add_student_select" class="span3" multiple>
 	  </select>  
+	  -->  
 	 
-	  <button id="add_student_btn" onclick="createNewStudent()">Add</button>  
+	  <button id="add_student_btn" onclick="printList();">Add</button>  <br><br>
+	  <p id="add_student_msg"></p>
 </body>
 
 </html>

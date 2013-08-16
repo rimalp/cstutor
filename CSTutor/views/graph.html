@@ -1,27 +1,18 @@
 <html>
 <head>
+	<link rel="stylesheet" href="http://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css" />
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+	<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
 	<script type="text/javascript" src="../public/javascripts/raphael.js"></script>
-	<script type="text/javascript" src="../public/javascripts/jquery-1.8.2.js"></script>
 	<script type="text/javascript" src="../public/javascripts/dracula_graffle.js"></script>
 	<script type="text/javascript" src="../public/javascripts/database_requests.js"></script>
 	<script type="text/javascript" src="../public/javascripts/graph.js"></script>
 	<script type="text/javascript" src="../public/javascripts/menu.js"></script>
 	<script type="text/javascript" src="../public/javascripts/newproject.js"></script>
-	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 	<script src="/jquery.cookie.js"></script>
 	<link href="../bootstrap/css/bootstrap.css" rel="stylesheet">
 	<link href="../bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
 
-
-	<!-- <link href="../assets/css/bootstrap.css" rel="stylesheet">
-	<link href="../assets/css/bootstrap-responsive.css" rel="stylesheet"> -->
-
-	<!-- Fav and touch icons -->
-	<!-- <link rel="apple-touch-icon-precomposed" sizes="144x144" href="../assets/ico/apple-touch-icon-144-precomposed.png">
-	<link rel="apple-touch-icon-precomposed" sizes="114x114" href="../assets/ico/apple-touch-icon-114-precomposed.png">
-	<link rel="apple-touch-icon-precomposed" sizes="72x72" href="../assets/ico/apple-touch-icon-72-precomposed.png">
-	<link rel="apple-touch-icon-precomposed" href="../assets/ico/apple-touch-icon-57-precomposed.png">
-	<link rel="shortcut icon" href="../assets/ico/favicon.png"> -->
 	
 	<script type="text/javascript">
 
@@ -35,13 +26,10 @@
 		$(document).ready(function(){	
 
   			$("#buttonId").click(function(){
-  			console.log("clicked!");
-  			$.post('/login', { name: "John", time: "2pm" }, function(data, status) {
-			  alert("Data: " + data + "\nStatus: " + status);
-			});	
-    		// $.get("/login",function(data,status){
-      // 			alert("Data: " + data + "\nStatus: " + status);
-    		// });
+				console.log("clicked!");
+				$.post('/login', { name: "John", time: "2pm" }, function(data, status) {
+				  alert("Data: " + data + "\nStatus: " + status);
+				});
   			});
 		});
 	</script>
@@ -182,7 +170,7 @@
 		<!-- center-->
 		<div class="span8" style="margin: 0px; width: 66%;">
 			<!-- header -->
-			<header id="center_header" class="title"><h1>header</h1></header>
+			<header id="center_header" class="title"><h3>header</h3></header>
 			
 			<!-- detail view -->
 			<div id="detail_view_container" class="center_container">
@@ -199,7 +187,7 @@
 			<div style="position: fixed; margin: .5%; width: 16%;">
 				<!-- Node Info -->
 				<div class="side-box">
-					<header class="side-box-header"><h1 style="margin: 0px;">Node Info</h1></header>
+					<header class="side-box-header"><h3 style="margin: 0px;">Node Info</h3></header>
 					<div id="info" class="side-box-body">
 						Title: <br/>
 						Description:
@@ -207,7 +195,7 @@
 				</div>
 				<!-- New Node -->
 				<div class="side-box">
-					<header class="side-box-header"><h1 style="margin: 0px;">New Node</h1></header>
+					<header class="side-box-header"><h3 style="margin: 0px;">New Node</h3></header>
 					<div class="side-box-body">
 						<div class="row-fluid">
 							<input id="node_name" type="text" placeholder="Title"/>
@@ -220,7 +208,7 @@
 				</div>
 				<!-- Minimap -->
 				<div class="side-box">
-					<header class="side-box-header"><h1 style="margin: 0px;">MiniMap</h1></header>
+					<header class="side-box-header"><h3 style="margin: 0px;">MiniMap</h3></header>
 					<div id="minimap" class="side-box-body" style="height: 200px;">
 						
 					</div>
@@ -228,21 +216,7 @@
 			</div>
 		</div>
 	</div>
-	
-<!--    <script src="../bootstrap/js/bootstrap.js"></script>
-    <script src="../bootstrap/js/jquery.js"></script>
-    <script src="../bootstrap/js/bootstrap-transition.js"></script>
-    <script src="../bootstrap/js/bootstrap-alert.js"></script>
-    <script src="../bootstrap/js/bootstrap-modal.js"></script>
-    <script src="../bootstrap/js/bootstrap-dropdown.js"></script>
-    <script src="../bootstrap/js/bootstrap-scrollspy.js"></script>
-    <script src="../bootstrap/js/bootstrap-tab.js"></script>
-    <script src="../bootstrap/js/bootstrap-tooltip.js"></script>
-    <script src="../bootstrap/js/bootstrap-popover.js"></script>
-    <script src="../bootstrap/js/bootstrap-button.js"></script>
-    <script src="../bootstrap/js/bootstrap-collapse.js"></script>
-    <script src="../bootstrap/js/bootstrap-carousel.js"></script>
-    <script src="../bootstrap/js/bootstrap-typeahead.js"></script> -->
+
 </body>
 </html>
 

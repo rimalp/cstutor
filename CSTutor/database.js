@@ -110,6 +110,16 @@ Database.prototype = {
 			});
 	},
 	
+	getAllStudents: function(callback){
+		client.query("SELECT email, (firstname || ' ' || lastname || '(' ||email||')') AS name FROM student", function(err, result){
+			if(err){
+				callback(err);
+			}else{
+				callback(null, result);
+			}
+		});
+	},
+	
 	getPromptsForProject: function(projectName, courseName, courseYear, courseSemester, callback){
 		client.query("SELECT id, text, requiresInput, eventType, frequency FROM prompt WHERE prompt.projectName=$1 AND prompt.courseName=$2 AND prompt.courseYear=$3 AND prompt.courseSemester=$4 ",
 			[projectName, courseName, courseYear, courseSemester], function(err, result){
@@ -265,11 +275,7 @@ Database.prototype = {
 		});
 	},
 	
-	getFullGraph: function(graphId, callback){
-		
-	},
-	
-	getGraph: function(graphId, callback){
+	/*getGraph: function(graphId, callback){
 		var graph = {};
 		var graphInfo = {};
 		var nodeInfo = [];
@@ -334,7 +340,7 @@ Database.prototype = {
 		graph.nodeInfo = nodeInfo;
 		graph.edgeInfo = edgeInfo;
 		return graph;
-	},
+	},*/
 	
 	//get a list of top level graphs for a given project and student
 	/*	This method returns a JSON string where it contains arrays of objects with three parameters - graphInfo, nodesInfo and edgesInfo
@@ -446,7 +452,7 @@ Database.prototype = {
 		});
 	},
 
-
+	
 
 	
 	//CREATE-UPDATE queries ----- need to check first if exists then insert if need be -------
@@ -595,18 +601,20 @@ Database.prototype = {
 		client.query("SELECT email FROM student_course WHERE email=$1", [email], function(err, result){
 			if(err){
 				callback(err);
-			}else if(result.rows.rowCount == 0){
+			}else if(result.rows.length == 0){
 				//insert, then assign all the labs to the student too
 				client.query("INSERT INTO student_course VALUES($1,$2,$3,$4)", [email, courseName, courseYear, courseSemester], function(err){
 					if(err){
 						callback(err);
 					}else{
+						callback(null);
 						//assign the labs in the course to the student by adding rows to student_project table
 						//NOT NECESSARY**
 					}
 				});
 			}else{
 				//update, then assign all the labs to the student too
+				/*
 				client.query("UPDATE student_course SET email=$1, courseName=$2, courseYear=$3, courseSemester=$4 WHERE "+
 					"email=$1 AND courseName=$2 AND courseYear=$3 AND courseSemester=$4", [email, courseName, courseYear, courseSemester], 
 					function(err){
@@ -614,6 +622,8 @@ Database.prototype = {
 							callback(err);
 						}
 					});
+					* */
+					callback(null);
 			}
 		});
 	},

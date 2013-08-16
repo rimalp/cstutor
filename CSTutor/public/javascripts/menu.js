@@ -5,6 +5,7 @@ var mode = "admin";
 var userId = "Jack";
 var currentProject = false;
 var currentStudent = false;
+var currentCourse = false;
 
 var Base = function(title){
 	this.title = title;
@@ -273,22 +274,19 @@ courses[1] = cs205;
 */
 
 function init(){
-	/*menu = document.getElementById("menu");
-	var listTitle = document.createElement('li');
-	listTitle.className = "nav-header";
-	listTitle.innerHTML = userId;
-	menu.appendChild(listTitle);
-	addSubMenu(menu, courses);*/
 	onload();
 	detail_view = document.getElementById("detail_view");
 	detail_view_container = document.getElementById("detail_view_container");
 	center_header = document.getElementById("center_header");
+	
 	if(mode == "admin"){
 		showDetailView();
 	}
 	else {
 		showCanvas();
 	}
+	mode = $.cookie("mode");
+	console.log("mode set to: " + mode);
 }
 
 function addSubMenu(li, array){
@@ -377,6 +375,7 @@ function getSubMenuOnClickFunction(li, ul, item){
 }
 
 function displayNewProject(course, project, back){
+	
 	clearDetailView();
 	showDetailView();
 	
@@ -451,6 +450,7 @@ function displayNewProject(course, project, back){
 
 //added by rimalp
 function displayNewCourse(courses, back){
+	
 	clearDetailView();
 	showDetailView();
 
@@ -461,7 +461,7 @@ function displayNewCourse(courses, back){
 	
 }
 
-function displayNewStudent(course) {
+function displayNewStudent(course) {	
 	clearDetailView();
 	showDetailView();
 	
@@ -470,6 +470,9 @@ function displayNewStudent(course) {
 }
 
 function createNewCourse(){
+	
+	if(mode == "student") return; //only professors create a new project
+	
 	var professor = {title: "liewc@lafayette.edu"};
 	var newCourse = {}
 	newCourse.title = $('#course_name').val();
@@ -492,6 +495,13 @@ function createNewCourse(){
 	});
 }
 
+function addNewStudent(emails){
+	console.log(JSON.stringify(emails));
+	for(var i=0; i<emails.length; i++){
+		addStudents(currentCourse, emails[i]);
+		//todo update the students array to show them in display
+	}	
+}
 
 
 function addNewPrompt(promptArray, index, parent){
@@ -605,6 +615,7 @@ var backButtonStack = new Array();
 function displayDetail(courses){
 	clearDetailView();
 	showDetailView();
+	alert($.cookie("mode"));
 	
 	setTitle("Courses");
 	backButtonStack.push(getButtonDiv("Courses", function(){backButtonStack.pop(); displayDetail(courses);}));
@@ -618,6 +629,8 @@ function displayDetail(courses){
 function displayDetailCourse(course, back){
 	clearDetailView();
 	showDetailView();
+	
+	currentCourse = course;
 	
 	if(!back)
 		backButtonStack.push(getButtonDiv(course.title, function(){backButtonStack.pop(); displayDetailCourse(course, true);}));
@@ -857,7 +870,7 @@ function getInfoBoxes(title, array, parent, onClickMaker, getImagePath, newFunct
 		parent.appendChild(div);
 	}
 	
-	if(newFunction){
+	if(newFunction && mode == "admin"){
 		var div = document.createElement("div");
 		div.className = "info_block";
 		div.innerHTML = "<img class='info_content' width='50' height='50' src=''>";
