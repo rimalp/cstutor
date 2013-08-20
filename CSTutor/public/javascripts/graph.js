@@ -103,14 +103,17 @@ var onload = function(){
 	miniR = Raphael("minimap", sideLength, sideLength);
 	miniRect = r.rect(0, 0, document.getElementById("canvas").offsetWidth, document.getElementById("canvas").offsetHeight);
 	canvas = document.getElementById("canvas");
-	trashcan = r.image("../public/images/trashcan.png", document.getElementById("canvas").offsetWidth - 70, 0, 50, 50);
-	trashcan.attr({opacity: .2});
-	scissors = r.image("../public/images/scissors.png", document.getElementById("canvas").offsetWidth - 70, document.getElementById("canvas").offsetHeight - 70, 50, 50);
-	scissors.attr({opacity: .2});
-	scissors.mousedown(function(){
-				edgeClippers = !edgeClippers;
+	//if($.cookie("mode") == "student"){
+		trashcan = r.image("../public/images/trashcan.png", document.getElementById("canvas").offsetWidth - 70, 0, 50, 50);
+		trashcan.attr({opacity: .2});
+		scissors = r.image("../public/images/scissors.png", document.getElementById("canvas").offsetWidth - 70, document.getElementById("canvas").offsetHeight - 70, 50, 50);
+		scissors.attr({opacity: .2});
+		scissors.mousedown(function(){
+					edgeClippers = !edgeClippers;
 				scissors.attr({opacity: edgeClippers ? 1 : .2});
 			});
+	//}
+	
 	
 	var g = new Graph();
 	currentGraph = g;
@@ -621,6 +624,7 @@ Graph.prototype = {
 		
 		var showFunction = function(){
 			showGraph(topLevel);
+			currentProject.executeNewVersionPrompts(currentStudent);
 		};
 		
 		if(this == deepestSubgraph && this.nodes.length == 0)

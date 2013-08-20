@@ -62,7 +62,8 @@ http.createServer(app).listen(app.get('port'), function(err){
 //Database connection
 // var client = new pg.Client(conString);
 console.log("before");
-var client = new pg.Client({user: 'rimalp', password: 'rimalp', database: 'gfb', host: 'localhost', port: 5432 });
+//var client = new pg.Client({user: 'rimalp', password: 'rimalp', database: 'gfb', host: 'localhost', port: 5432 });
+var client = new pg.Client({user: 'prabhat', password: 'pass', database: 'tutor', host: 'localhost', port: 5432 });
 console.log("after");
 client.connect(function(err) {
 	console.log("connect called");
@@ -402,11 +403,11 @@ app.post('/add_students', function(req, res){
 });
 
 //params: project{name, description, courseName, courseYear, description}
-app.put('/create_project', function(req, res){
-	database.createProject(req.body.projectName, req, body.projectDescription, req.body.courseName, req.body.courseYear, req.body.courseSemester,
-		function(err, result){
+app.post('/create_project', function(req, res){
+	console.log("create project called");
+	database.createProject(req.body.projectName, req.body.projectDescription, req.body.courseName, req.body.courseYear, req.body.courseSemester, function(err, result){
 			sendPutRequest(req, res, err, result);
-		});
+	});
 });
 
 //params: graph { graphInfo{...}, nodeInfo{[x, y, ...., deleted(boolean), ...] }, edgeInfo{ array of edges ...}, studentEmail, courseName, courseYear, courseSemester, projectName}

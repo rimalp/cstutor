@@ -195,7 +195,7 @@ Database.prototype = {
 	},
 	
 	getFullGraph: function(graphIds, callback){
-		var running=1;
+		var running=graphIds.length;
 		var itemlist = graphIds;
 		var graphlist = [];
 		
@@ -234,6 +234,7 @@ Database.prototype = {
 										client.query("SELECT * FROM graph WHERE parentNodeId=$1", [result.rows[i].id], function(err, result){
 											if(result.rows.length > 0){
 												itemlist.push(result.rows[0].id);
+												console.log("graphid added to itemlist: " + result.rows[0].id);
 												running++;
 											}
 										});
@@ -486,9 +487,9 @@ Database.prototype = {
 		client.query("SELECT email FROM professor WHERE email=$1 LIMIT 1", [email], function(err, result){
 			if(err){
 				callback(err);
-			}else if(result.rows.rowCount == 0){
+			}else if(result.rows.length == 0){
 				//insert
-				client.query("INSERT INTO professor(email, firstName, lastName, password) VALUES($1,$2,$3,$4)",
+				client.query("INSERT INTO professor(email, firstname, lastname, password) VALUES($1,$2,$3,$4)",
 					[email, firstName, lastName, password], function(err, result){
 					if(err){
 						callback(err, null);
@@ -499,10 +500,15 @@ Database.prototype = {
 
 			}else{
 				//update
-				client.query("UPDATE professor SET firstName=$1, lastName=$2, password=$3 WHERE email=$4",
+				console.log(firstName + "  " + lastName);
+				client.query("UPDATE professor SET firstname=$1, lastname=$2, password=$3 WHERE email=$4",
 					[firstName, lastName, password, email],
 					function(err){
+					if(err){
 						callback(err);
+					}else{
+						callback(null);
+					}
 				});
 			}
 		});
@@ -513,9 +519,9 @@ Database.prototype = {
 		client.query("SELECT email FROM student WHERE email=$1 LIMIT 1", [email], function(err, result){
 			if(err){
 				callback(err);
-			}else if(result.rows.rowCount == 0){
+			}else if(result.rows.length == 0){
 				//insert
-				client.query("INSERT INTO student(email, firstName, lastName, password) VALUES($1,$2,$3,$4)",
+				client.query("INSERT INTO student(email, firstname, lastname, password) VALUES($1,$2,$3,$4)",
 					[email, firstName, lastName, password], function(err, result){
 					if(err){
 						callback(err, null);
@@ -526,10 +532,15 @@ Database.prototype = {
 
 			}else{
 				//update
-				client.query("UPDATE student SET firstName=$1, lastName=$2, password=$3 WHERE email=$4",
+				console.log(firstName + "  " + lastName);
+				client.query("UPDATE student SET firstname=$1, lastname=$2, password=$3 WHERE email=$4",
 					[firstName, lastName, password, email],
 					function(err){
+					if(err){
 						callback(err);
+					}else{
+						callback(null);
+					}
 				});
 			}
 		})
@@ -589,34 +600,37 @@ Database.prototype = {
 		});
 	},
 
-	createProject: function(project, courseName, courseYear, courseSemester, callback){
-		client.query("SELECT year FROM project WHERE courseName=$1 AND courseYear=$2 AND courseSemester=$3 AND name=$4",
-		[courseName, project.courseYear, project.courseSemester, project.name], function(err, result){ 
+	createProject: function(projectName, projectDescription, courseName, courseYear, courseSemester, callback){
+		client.query("SELECT * FROM project WHERE coursename=$1 AND courseyear=$2 AND coursesemester=$3 AND name=$4",
+		[courseName, courseYear, courseSemester, projectName], function(err, result){ 
 			if(err){
 				callback(err);
-			}else if(result.rows.rowCount ==0){
+			}else if(result.rows.length == 0){
 				//insert
+				console.log("inserting new project-----");
 				//name text, description text, dueDate DATE, courseName varchar, courseYear integer, courseSemester varchar, 
 				//PRIMARY KEY(courseName, courseYear, courseSemester, name)
-				client.query("INSERT INTO project VALUES ($1, $2, $3, $4, $5, $6)", [project.name, project.description, project.dueDate, courseName, courseYear, courseSemester],
+				client.query("INSERT INTO project VALUES ($1, $2, $3, $4, $5, $6)", [projectName, projectDescription, new Date(), courseName, courseYear, courseSemester],
 					function(req, res){
 						if(err){
 							callback(err);
 						}else{
-							callback(null);
+							callback(null, {rows: [{exists: false}]});
 						}
 					});
 			}else{
 				//update
-				client.query("UPDATE project SET name=$1, description=$2, dueDate=$3, courseName=$4, courseYear=$5, courseSemester=$6 "+
-					"WHERE courseName=$4 AND courseYear=$5 AND courseSemester=$6 AND name=$1",
-					[project.name, project.description, project.dueDate, courseName, courseYear, courseSemester], function(err){
-						if(err){
-							callback(err);
-						}else{
-							callback(null);
-						}
-					});			}
+				callback(null, {rows: [{exists: true}]});
+				// client.query("UPDATE project SET name=$1, description=$2, dueDate=$3, courseName=$4, courseYear=$5, courseSemester=$6 "+
+				// 	"WHERE courseName=$4 AND courseYear=$5 AND courseSemester=$6 AND name=$1",
+				// 	[project.name, project.description, project.dueDate, courseName, courseYear, courseSemester], function(err){
+				// 		if(err){
+				// 			callback(err);
+				// 		}else{
+				// 			callback(null);
+				// 		}
+				// 	});			
+			}
 		});
 	},
 
@@ -652,6 +666,7 @@ Database.prototype = {
 		});
 	},
 	createNode: function(nodeInfo, callback){
+		console.log("Node Info: " + JSON.stringify(nodeInfo));
 		client.query("INSERT INTO node(x, y, graphId, name, description, color) VALUES($1,$2,$3,$4,$5,$6) RETURNING id",
 		[nodeInfo.x, nodeInfo.y, nodeInfo.graphId, nodeInfo.name, nodeInfo.description, nodeInfo.color], function(err, result){
 			if(err){
@@ -916,18 +931,18 @@ Database.prototype = {
 						client.query("DELETE FROM node WHERE graphId=$1 RETURNING id",[graphId], function(err, result){
 							if(err){
 								callback(err);
-							}else if(result.rows.rowCount == 0){
+							}else if(result.rows.length == 0){
 								//maybe its an empty graph, so return null
 								callback(null);
 							}else{
 								//delete all the nodes returned which in turn delete the graphs within them if any
-								for(var i=0; i<result.rows.rowCount; i++ ){
+								for(var i=0; i<result.rows.length; i++ ){
 									deleteGraphWithParentNode(result.rows[i], function(err){
 										if(err){
 											callback(err);
 										}
 										//return if youre done with recursive call for all the nodes
-										if(i==(result.rows.rowCount-1)){
+										if(i==(result.rows.length-1)){
 											callback(null);
 										}
 									});

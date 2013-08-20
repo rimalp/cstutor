@@ -19,6 +19,15 @@
 		var setInfo = function(name, description){
 			document.getElementById("info").innerHTML = "Title: " + name + "<br>Description: " + description;
 		}
+
+		function logout(){
+				$.cookie("mode", null);
+				$.cookie("email", null);
+				$.cookie("password", null);
+				$.cookie("firstname", null);
+				$.cookie("lastname", null);
+				window.location.href ='/login';
+		}
 	</script>
 
 
@@ -33,11 +42,113 @@
   			});
 		});
 	</script>
+
+	<style type="text/css">   
+
+	/*	.navbar-inner {
+		    /*background-color: red;
+		    background-image: linear-gradient(to top right, #29061B, #329DEF);
+		    background-repeat: repeat-x;
+		    border-radius: 2px 2px 2px 2px;
+		    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.067);
+		    */
+		    min-height: 80px;
+		    padding-left: 20px;
+		    padding-right: 20px;
+		}
+
+		.dropdown-menu {
+		    background-clip: padding-box;
+		    background-color: red;
+		    border: 1px solid rgba(0, 0, 0, 0.2);
+		    border-radius: 6px 6px 6px 6px;
+		    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+		    display: none;
+		    float: left;
+		    left: 0;
+		    list-style: none outside none;
+		    margin: 2px 0 0;
+		    min-width: 160px;
+		    padding: 5px 0;
+		    position: absolute;
+		    top: 100%;
+		    z-index: 1000;
+		}
+
+		.btn-group.open .btn.dropdown-toggle {
+		  background-color: red;
+		}
+
+		.btn-group.open .btn.dropdown-toggle {
+		  background-color:lime;
+		}
+
+		.navbar .nav li.dropdown.open > .dropdown-toggle,
+		.navbar .nav li.dropdown.active > .dropdown-toggle,
+		.navbar .nav li.dropdown.open.active > .dropdown-toggle {
+		  color:white;
+		  background-color:Teal;
+		}
+
+		.navbar .nav > li > a {
+		    color: #0066CC;
+		    float: none;
+		    padding: 10px 15px;
+		    text-decoration: none;
+		    text-shadow: 0 0px 0 #ffffff;
+		}
+
+
+		.navbar .brand {
+		  display: block;
+		  float: left;
+		  padding: 10px 20px 10px;
+		  margin-left: -20px;
+		  font-size: 20px;
+		  font-weight: 200;
+		  color: #0066CC;
+		  text-shadow: 0 0px 0 #ffffff;
+		}
+
+		.navbar .nav > li > a:focus,
+		.navbar .nav > li > a:hover {
+		  color: black;
+		  text-decoration: none;
+		  background-color: transparent;
+		}
+
+		.navbar-text {
+		  margin-bottom: 0;
+		  line-height: 40px;
+		  color: black;
+		}
+
+		.dropdown-menu li > a {
+		  display: block;
+		  padding: 3px 20px;
+		  clear: both;
+		  font-weight: normal;
+		  line-height: 20px;
+		  color: white;
+		  white-space: nowrap;
+		}
+
+		.navbar-link {
+		  color: white;
+		}
+
+		.navbar-link:hover {
+		  color: blue;
+		}
+
+		</style>
 	
 	<style type="text/css">
 		
 		.gradbg{
-			background-color: #84B4D5;
+			/*background-color: #84B4D5;
+			background-image: linear-gradient(to top right, #8CA3FF, #34A4FA);*/
+			background-image: linear-gradient(to top right, #29061B, #329DEF);
 		}
 		
 		.side-box{
@@ -112,7 +223,7 @@
 			width: 0px;
 		}
 		
-		h1{
+		h3{
 			margin: 0px 0px;
 			padding: 5px;
 		}
@@ -143,14 +254,45 @@
 			font-family: "Droid Sans",Helvetica,Arial,sans-serif;
 			line-height: 1.125em;
 			border: 1px solid rgb(217, 219, 221);
+			width: 90px;
+			height: 30px;
 		}
 		
 	</style>
 </head>
 
 <body onload="init()" >
+
 	
 	<div class="row-fluid gradbg" >
+		<div id="top" style="height:7%; width: 100%; text-aligh:center">
+
+				<div class="navbar navbar-fixed-top">
+				    <div class="navbar-inner">
+				        <div class="container">
+				            <a title="" class="brand" href="#">Graph Tutor<!-- <img src="/CSTutorIcon.gif"/> --></a>
+				                <ul class="nav pull-right">
+				                <li class="divider-vertical">
+				                <li><a href="">About</a></span></li>
+				                <li class="divider-vertical">
+				                <li><a href="">Contact</a></li>
+				                <li class="divider-vertical">
+				                <li class="dropdown"><a href="javascript:logout()" class="dropdown-toggle" data-toggle="dropdown">Logout<i class="icon-user"></i></a>
+				                    <!-- <ul class="dropdown-menu">
+				                        <li><a href="">My account</a></li>
+				                        <li><a href="/accounts/logout/">Log out</a></li>
+				                    </ul> -->
+				                </li>
+				            </ul>
+				            </div>
+				       </div>
+				</div>
+				
+
+
+		</div>
+
+
 	
 		<!-- left-->
 		<div class="row-fluid span2" style="margin: 0px; width: 17%;">
@@ -162,7 +304,7 @@
 				<div id="admin-menu">
 					<button class="navigate_button top_navigate_button">Home</button><br>
 					<button class="navigate_button" onclick="displayDetail(courses);">Courses</button><br>
-					<button class="navigate_button bottom_navigate_button">Settings</button>
+					<button class="navigate_button bottom_navigate_button" onclick="displayProfileInformation();">Account</button>
 				</div>
 			</div>
 		</div>
@@ -170,7 +312,9 @@
 		<!-- center-->
 		<div class="span8" style="margin: 0px; width: 66%;">
 			<!-- header -->
-			<header id="center_header" class="title"><h3>header</h3></header>
+			<div id="center_header" class="title">
+				<h3>Welcome to Graph Tutor!</h3>
+			</div>
 			
 			<!-- detail view -->
 			<div id="detail_view_container" class="center_container">

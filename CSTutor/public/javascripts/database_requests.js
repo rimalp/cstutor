@@ -38,6 +38,7 @@ function getPromptsForProject(project){
 }
 
 function createPrompt(prompt, project){
+	console.log("Prompt sent after creation: " + JSON.stringify(prompt));
 	$.post('/create_prompt',
 		{projectName: project.title, courseName: project.course.title, courseYear: project.course.year, courseSemester: project.course.semester, text: prompt.text, requiresInput: prompt.requiresInput?1:0, eventType: prompt.eventType, frequency: prompt.frequency},
 		function(data, status){
@@ -47,6 +48,7 @@ function createPrompt(prompt, project){
 }
 
 function updatePrompt(prompt, project){
+	console.log("Prompt sent after UPDATE: " + JSON.stringify(prompt));
 	$.post('/update_prompt',
 		{id: prompt.id, projectName: project.title, courseName: project.course.title, courseYear: project.course.year, courseSemester: project.course.semester, text: prompt.text, requiresInput: prompt.requiresInput?1:0, eventType: prompt.eventType, frequency: prompt.frequency},
 		function(data, status){
@@ -286,16 +288,21 @@ function addStudents(course, email){
 		});
 }
 
-function createProject(project, course){
+function createProject(project, course, callback){
 	$.post('/create_project',
 		{projectName: project.title, projectDescription: "", courseName: course.title, courseYear: course.year, courseSemester: course.semester},
 		function(data, status) {
+			console.log("create Project response: " + response);
+			var response = eval(data);
+			callback(response);
 		});
 }
 
 function createNode(node, showFunction){
+	if($.cookie("mode") == "admin") return;
 	var postNode = function(){
 		var nodeInfo = {x: Math.round(node.x), y: Math.round(node.y), graphId: node.graph.id, name: node.data, description: node.description, color: node.color};
+		console.log("NodeInfo sent: " + JSON.stringify(nodeInfo));
 		$.post('/create_node',
 			{"nodeInfo": nodeInfo},
 			function(data, status) {
@@ -321,6 +328,7 @@ function createNode(node, showFunction){
 }
 
 function updateNode(node){
+	if($.cookie("mode") == "admin") return;
 	var postUpdateNode = function(){
 		var nodeInfo = {id: node.id, x: Math.round(node.x), y: Math.round(node.y), graphId: node.graph.id, name: node.data, description: node.description, color: node.color};
 		$.post('/update_node',
@@ -343,6 +351,7 @@ function updateNode(node){
 }
 
 function deleteNode(node){
+	if($.cookie("mode") == "admin") return;
 	var nodeInfo = {id: node.id};
 	$.post('/delete_node',
 		{"nodeInfo": nodeInfo},
@@ -352,6 +361,7 @@ function deleteNode(node){
 }
 
 function createEdge(edge, showFunction){
+	if($.cookie("mode") == "admin") return;
 	var postEdge = function(){
 		var edgeInfo = {sourceNode: edge.sourceNode.id, destNode: edge.destNode.id, graphId: edge.sourceNode.graph.id};
 		$.post('/create_edge',
@@ -376,6 +386,7 @@ function createEdge(edge, showFunction){
 }
 
 function deleteEdge(edge){
+	if($.cookie("mode") == "admin") return;
 	var postRemoveEdge = function(){
 		var edgeInfo = {sourceNode: edge.sourceNode.id, destNode: edge.destNode.id, graphId: edge.sourceNode.graph.id};
 		$.post('/delete_edge',
@@ -398,6 +409,7 @@ function deleteEdge(edge){
 }
 
 function createGraph(graph, showFunction){
+	if($.cookie("mode") == "admin") return;
 	//get top level graph
 	var currentGraph = graph;
 	
@@ -443,6 +455,7 @@ function createGraph(graph, showFunction){
 }
 
 function updateGraph(graph, delayedCallback){
+	if($.cookie("mode") == "admin") return;
 	var nodeArray = new Array();
 	for(var i=0; i<graph.nodes.length; i++){
 		var node = graph.nodes[i];

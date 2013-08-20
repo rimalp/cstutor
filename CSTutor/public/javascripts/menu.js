@@ -120,7 +120,7 @@ Project.prototype.executeNewVersionPrompts = function(student){
 Project.prototype.executeNodeFrequencyPrompts = function(student, nodeCount){
 	for(var i=0; i<this.prompts.length; i++){
 		var current = this.prompts[i];
-		if(current.eventType == "frequency" && currentGraph.nodes.length%current.frequency == 0){
+		if(current.eventType == "frequency" && nodeCount%current.frequency == 0){
 			student.getGraphHistoryOf(this).addResponse(current.execute());
 		}
 	}
@@ -188,22 +188,47 @@ var Response = function(prompt){
 }
 
 var courses = new Array();
-getCoursesForStudent({title: 'kellerj@lafayette.edu'},
-	function(data, status){
-		var response = eval(data);
-		for(var i=0; i<response.length; i++){
-			var course = new Course(response[i].name);
-			course.year = response[i].year;
-			course.semester = response[i].semester;
-			courses[i] = course;
-		
-			//get projects
-			getProjectsForCourse(course, getProjectsForCourseCallback(course));
-		
-			//get students
-			getStudentsForCourse(course, getStudentsForCourseCallback(course));
-		}
-});
+
+function fetchData(){
+
+	if($.cookie("mode") == "student"){
+		getCoursesForStudent({title: $.cookie("email")},
+		function(data, status){
+			var response = eval(data);
+			for(var i=0; i<response.length; i++){
+				var course = new Course(response[i].name);
+				course.year = response[i].year;
+				course.semester = response[i].semester;
+				courses[i] = course;
+			
+				//get projects
+				getProjectsForCourse(course, getProjectsForCourseCallback(course));
+			
+				//get students
+				getStudentsForCourse(course, getStudentsForCourseCallback(course));
+			}
+		});
+	}else{
+		getCoursesForProfessor({title: $.cookie("email")}, function(data, status){
+			var response = JSON.parse(data);
+			for(var i=0; i<response.length; i++){
+				var course = new Course(response[i].name);
+				course.year = response[i].year;
+				course.semester = response[i].semester;
+				courses[i] = course;
+
+				//get projects
+				getProjectsForCourse(course, getProjectsForCourseCallback(course));
+			
+				//get students
+				getStudentsForCourse(course, getStudentsForCourseCallback(course));
+			}
+		});	
+	}
+
+}
+
+
 
 function getProjectsForCourseCallback(course/*, last*/){
 	return function(data, status){
@@ -227,51 +252,7 @@ function getStudentsForCourseCallback(course){
 			}
 		};
 }
-/*
-var cs150 = new Course("CS 150");
 
-var jack = new Student("Jack");
-var bob = new Student("Bob");
-var jeff = new Student("Jeff");
-var tom = new Student("Tom");
-cs150.addStudent(jack);
-cs150.addStudent(bob);
-cs150.addStudent(jeff);
-cs150.addStudent(tom);
-
-var lab1 = new Project("Lab 1", cs150);
-var lab2 = new Project("Lab 2", cs150);
-
-var graph1 = new Graph();
-var node1 = new Node("node1", "description");
-var node2 = new Node("node2", "description");
-var node3 = new Node("node3", "description");
-var node4 = new Node("node4", "description");
-graph1.addNode(node1);
-graph1.addNode(node2);
-graph1.addNode(node3);
-graph1.addNode(node4);
-
-var graph2 = new Graph();
-var node5 = new Node("node5", "description");
-var node6 = new Node("node6", "description");
-var node7 = new Node("node7", "description");
-var node8 = new Node("node8", "description");
-graph2.addNode(node5);
-graph2.addNode(node6);
-graph2.addNode(node7);
-graph2.addNode(node8);
-
-jack.graphHistories[0] = new GraphHistory(jack, lab1);
-jack.graphHistories[0].addGraph(graph1);
-jack.graphHistories[0].addGraph(graph2);
-
-
-var cs205 = new Course("CS 205");
-
-courses[0] = cs150;
-courses[1] = cs205;
-*/
 
 function init(){
 	onload();
@@ -279,6 +260,8 @@ function init(){
 	detail_view_container = document.getElementById("detail_view_container");
 	center_header = document.getElementById("center_header");
 	
+	fetchData();
+
 	if(mode == "admin"){
 		showDetailView();
 	}
@@ -379,7 +362,10 @@ function displayNewProject(course, project, back){
 	showDetailView();
 	
 	if(!back)
-		backButtonStack.push(getButtonDiv("New Project for " + course.title, function(){backButtonStack.pop(); displayNewProject(course, project, true);}));
+		backButtonStack.push(getButtonDiv("" + course.title, function(){backButtonStack.pop(); displayNewProject(course, project, true);}));
+	else{
+		backButtonStack.push(getButtonDiv("" + course.title, function(){ displayNewProject(course, project, true);}));		
+	}
 	setTitle("New Project for " + course.title, backButtonStack[backButtonStack.length-2]);
 	
 	//Prompts
@@ -415,6 +401,14 @@ function displayNewProject(course, project, back){
 	doneButton.onclick = function(){
 					if(!project){
 						project = new Project(titleInput.value, course);
+						//create the project
+						createProject(project, currentCourse, function(response){
+							if(response[0].exists){
+								alert("the project already exists");
+							}else{
+								displayDetailCourse(currentCourse, true);
+							}
+						});
 						project.prompts = promptArray;
 					}
 					else{
@@ -451,6 +445,15 @@ function displayNewCourse(courses, back){
 	clearDetailView();
 	showDetailView();
 
+
+	if(!back){
+		backButtonStack.push(getButtonDiv("Courses", function(){backButtonStack.pop(); displayNewCourse(courses, true);}));
+	}else{
+		backButtonStack.push(getButtonDiv("Courses", function(){ displayNewCourse(courses, true);}));
+	}
+	setTitle("New Course for " + $.cookie("email"), backButtonStack[backButtonStack.length-2]);
+
+
 	//load the simple form	
 	$('#detail_view').load("/views/new_course.html");
 	$('#add_student_header').text("test");
@@ -458,29 +461,44 @@ function displayNewCourse(courses, back){
 	
 }
 
-function displayNewStudent(course) {	
+function displayNewStudent(course, back) {	
 	clearDetailView();
 	showDetailView();
-	
+
 	//load the form
 	$('#detail_view').load("views/new_student.html");
+
+	if(!back){
+		backButtonStack.push(getButtonDiv("New Project for " + course.title, function(){backButtonStack.pop(); displayNewstudent(course, true);}));
+	}else{
+		console.log("back button stack there");
+	}
+	setTitle("New Student for " + course.title, backButtonStack[backButtonStack.length-2]);
+
+	//setTitle(project.title, backButtonStack[backButtonStack.length-2]);
+	
+
+	
 }
 
 function createNewCourse(){
 	
 	if(mode == "student") return; //only professors create a new project
 	
-	var professor = {title: "liewc@lafayette.edu"};
+
+	var professor = {title: $.cookie("email")};
 	var newCourse = {}
 	newCourse.title = $('#course_name').val();
 	newCourse.year = $('#course_year').val();
 	newCourse.semester = $('#course_semester').val();
 	console.log("values: " + newCourse.title + "  " + newCourse.year + "  " + newCourse.semester);
+
+	if(newCourse.title == "" ) return;
 	createCourse(newCourse, professor, function(response){
 		  if(response[0].exists){
 			alert("Duplicate course in Database!");
 		  }else{
-			//load the detail page again after new courses wre fetched
+			//load the detail page again after new courses were fetched
 			//first fetch the necessary data
 			var c = new Course(newCourse.title);
 			c.year = newCourse.year;
@@ -492,6 +510,9 @@ function createNewCourse(){
 	});
 }
 
+function createNewProject(){
+
+}
 function addNewStudent(emails){
 	console.log(JSON.stringify(emails));
 	for(var i=0; i<emails.length; i++){
@@ -509,6 +530,13 @@ function addNewPrompt(promptArray, index, parent){
 	
 	// Prompt or Question
 	var actionDropdown = document.createElement("select");
+	actionDropdown.onchange = function(){
+		if(actionDropdown.selectedIndex == 0)
+			prompt.requiresInput = false;
+		else if(actionDropdown.selectedIndex == 1)
+			prompt.requiresInput = true;
+	}
+
 	actionDropdown.id = "dropdown";
 	var promptOption = document.createElement("option");
 	promptOption.value = "prompt";
@@ -533,13 +561,25 @@ function addNewPrompt(promptArray, index, parent){
 	
 	// When to trigger prompt/question
 	var eventDropdown = document.createElement("select");
+	eventDropdown.onchange = function(){
+		console.log("ONCHANGE " + eventDropdown.selectedIndex);
+		if(eventDropdown.selectedIndex == 0){
+			prompt.eventType = "version";
+		}
+		else if(eventDropdown.selectedIndex == 1){
+			prompt.eventType = "save";
+		}
+		else if(eventDropdown.selectedIndex == 2){
+			prompt.eventType  = "frequency";
+		}
+	};
 	
 	var frequencyInput = document.createElement("input");
 	
 	var versionOption = document.createElement("option");
 	versionOption.value = "version";
 	versionOption.innerHTML = "a new version is created";
-	versionOption.onclick = function(){
+	versionOption.onclick = function(){console.log("ONCLICK");	
 					prompt.eventType = "version";
 					frequencyInput.style.visibility = "hidden";
 					frequencyInput.style.width = "0px";
@@ -609,18 +649,26 @@ function addNewPrompt(promptArray, index, parent){
 
 var backButtonStack = new Array();
 
+
+
 function displayDetail(courses){
 	clearDetailView();
 	showDetailView();
-	alert($.cookie("mode"));
 	
 	setTitle("Courses");
 	backButtonStack.push(getButtonDiv("Courses", function(){backButtonStack.pop(); displayDetail(courses);}));
 	var courseDiv = document.createElement("div");
-	getInfoBoxes("", courses, courseDiv, coursesToCourseOnClickMaker, function(){return "";}, function(){displayNewCourse(courses);});
+	getInfoBoxes("", courses, courseDiv, coursesToCourseOnClickMaker, function(){return "";}, function(){displayNewCourse(courses, true);});
 	
 	detail_view.appendChild(courseDiv);
 	
+}
+
+function displayProfileInformation(){
+	console.log("clicked");
+	clearDetailView();
+	showDetailView();
+	$('#detail_view').load("/views/profile_settings.html");
 }
 
 function displayDetailCourse(course, back){
@@ -655,7 +703,7 @@ function displayDetailProject(project, back){
 	getInfoBoxes("Students", project.course.students, studentDiv, getProjectToStudentOnClickMaker(project), function(){return "";});
 	
 	var promptDiv = document.createElement("div");
-	promptDiv.innerHTML = "<header class='header' id='detail_header'><h1 id='detail_title'>Prompts/Questions</h1></header>";
+	promptDiv.innerHTML = "<header class='header' id='detail_header'><h3 id='detail_title'>Prompts/Questions</h3></header>";
 	for(var i=0; i<project.prompts.length; i++){
 		var current = project.prompts[i];
 		promptDiv.innerHTML += (current.requiresInput ? "Question " : "Prompt ") + "the student when " + (current.eventType == "version" ? "a vew version is created " : (current.eventType == "save" ? "a version is saved " : "the number of nodes is a multiple of " + current.frequency + " ")) + "with this text: " + current.text + "<br>";
@@ -702,7 +750,7 @@ function displayDetailStudentProject(student, project, back){
 		currentStudent = student;
 
 		var promptDiv = document.createElement("div");
-		promptDiv.innerHTML = "<header class='header' id='detail_header'><h1 id='detail_title'>Prompts/Questions</h1></header>";
+		promptDiv.innerHTML = "<header class='header' id='detail_header'><h3 id='detail_title'>Prompts/Questions</h3></header>";
 		var graphHistory = student.getGraphHistoryOf(project);
 		for(var i=0; i<graphHistory.responses.length; i++){
 			var response = graphHistory.responses[i];
@@ -738,9 +786,9 @@ function newGraphFunction(){
 	var spacer = document.createElement("div");
 	spacer.style = "height: 40%;";
 	div.appendChild(spacer);
-	var h1 = document.createElement("h1");
-	h1.innerHTML = "Loading...";
-	div.appendChild(h1);
+	var h3 = document.createElement("h3");
+	h3.innerHTML = "Loading...";
+	div.appendChild(h3);
 	detail_view.appendChild(div);
 	
 	
@@ -752,11 +800,10 @@ function newGraphFunction(){
 	else{
 		newGraph = new Graph();
 		currentGraphHistory.addGraph(newGraph);
-		createGraph(newGraph, function(){showGraph(newGraph);});
+		createGraph(newGraph, function(){showGraph(newGraph); currentProject.executeNewVersionPrompts(currentStudent);});
 	}
 	
 	//showGraph(newGraph);
-	currentProject.executeNewVersionPrompts(currentStudent);
 }
 
 function showGraph(graph, back){
@@ -771,23 +818,24 @@ function showGraph(graph, back){
 };
 
 function setTitle(title, leftDiv, rightDiv){
-	var h1 = document.createElement("h1");
+	var h3 = document.createElement("h4");
+	h3.class = "row";
 	
 	leftDiv = leftDiv || document.createElement("div");
 	leftDiv.style = "float: left";
-	h1.appendChild(leftDiv);
+	h3.appendChild(leftDiv);
 	
 	rightDiv = rightDiv || document.createElement("div");
 	rightDiv.style = "float: right";
-	h1.appendChild(rightDiv);
+	h3.appendChild(rightDiv);
 	
 	var titleText = document.createElement("div");
 	titleText.style = "margin: 0 auto;";
 	titleText.innerHTML = title;
-	h1.appendChild(titleText);
+	h3.appendChild(titleText);
 	
 	center_header.innerHTML = "";
-	center_header.appendChild(h1);
+	center_header.appendChild(h3);
 }
 
 function getButtonDiv(title, onclick){
@@ -849,14 +897,14 @@ function studentProjectToGraphOnClickMaker(graph){
 //-----------------------------------------------
 
 function getInfoBoxes(title, array, parent, onClickMaker, getImagePath, newFunction){
-	parent.innerHTML = "<header class='header' id='detail_header'><h1 id='detail_title'>" + title + "</h1></header>";
+	parent.innerHTML = "<header class='header' id='detail_header'><h3 id='detail_title'>" + title + "</h3></header>";
 	
 	for(var i=0; i<array.length; i++){
 		var current = array[i];
 		var div = document.createElement("div");
 		div.id = current.title;
 		div.className = "info_block";
-		div.innerHTML = "<img class='info_content' width='50' height='50' src='" + getImagePath() + "'>";
+		div.innerHTML = "<img class='info_content' width='100' height='100' src='" + getImagePath() + "'>";
 		var link = document.createElement("a");
 		link.className = "info_content";
 		link.onclick = onClickMaker(current);
@@ -866,10 +914,10 @@ function getInfoBoxes(title, array, parent, onClickMaker, getImagePath, newFunct
 		parent.appendChild(div);
 	}
 	
-	if(newFunction && mode == "admin"){
+	if(newFunction	){
 		var div = document.createElement("div");
 		div.className = "info_block";
-		div.innerHTML = "<img class='info_content' width='50' height='50' src=''>";
+		div.innerHTML = "<img class='info_content' width='100' height='100' src=''>";
 		var link = document.createElement("a");
 		link.className = "info_content";
 		link.onclick = newFunction;
