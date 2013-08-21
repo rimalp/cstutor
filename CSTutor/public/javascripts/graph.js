@@ -200,6 +200,10 @@ var updateMiniMap = function(){
 };
 
 var addNode = function(name, description){
+	if($.cookie('editgraph') == "false") {
+		console.log("Adding node: " + $.cookie("editgraph"));
+		return;
+	}
 	var node = new Node(name, description);
 	node.setAppearence(canvas.scrollLeft + canvas.offsetWidth/2, canvas.scrollTop + canvas.offsetHeight/2, 40, renderer);
 	node.show();
@@ -241,10 +245,18 @@ Node.prototype = {
 		return {id: this.id, description: this.description, x: this.x, y: this.y, color: this.color};
 	},
 	addChild: function(node){
+		if($.cookie('editgraph') == "false") {
+			console.log("Adding child: " + $.cookie("editgraph"));
+			return;
+		}
 		this.children[this.children.length] = node;
 		return this.addEdge(node);
 	},
 	removeChild: function(node){
+		if($.cookie('editgraph') == "false") {
+			console.log("Removing child: " + $.cookie("editgraph"));
+			return;
+		}
 		this.children.splice(this.children.indexOf(node), 1);
 		for(var i=0; i<this.edges.length; i++){
 			var current = this.edges[i];
@@ -258,6 +270,10 @@ Node.prototype = {
 		}
 	},
 	remove: function(){//BUG: doesn't remove from it's parent's children array
+		if($.cookie('editgraph') == "false") {
+			console.log("Removing node: " + $.cookie("editgraph"));
+			return;
+		}	
 		for(var i=0; i<this.edges.length; i++){
 			var edge = this.edges[i];
 			if(edge.sourceNode == this){
@@ -344,6 +360,10 @@ Node.prototype = {
 		}
 	},
 	addEdge: function(node){
+		if($.cookie('editgraph') == "false") {
+			console.log("Adding edge: " + $.cookie("editgraph"));
+			return;
+		}
 		var edge = new Edge(this, node);//this.r.connection(this.bottom, node.top, {directed: true});
 		this.edges[this.edges.length] = edge;
 		node.edges[node.edges.length] = edge;
@@ -360,6 +380,7 @@ Node.prototype = {
 		return function(e){
 			if(firstNode && selfRef.responsive){
 				var edge = firstNode.addChild(selfRef);
+				if(edge==undefined) return;
 				edge.show();
 				createEdge(edge);
 				updateMiniMap();
@@ -393,6 +414,7 @@ Node.prototype = {
 				if(!selfRef.subgraph){
 					selfRef.subgraph = new Graph();
 					selfRef.subgraph.title = selfRef.data + "'s subgraph";
+					selfRef.subgraph.version = currentGraph.version;
 					selfRef.subgraph.topLevel = false;
 					selfRef.subgraph.parent = selfRef;
 					createGraph(selfRef.subgraph);
@@ -569,6 +591,10 @@ var Graph = function(){
 
 Graph.prototype = {
 	addNode: function(node){
+		if($.cookie('editgraph') == "false") {
+			console.log("Adding node: " + $.cookie("editgraph"));
+			return;
+		}
 		this.nodes[this.nodes.length] = node;
 		node.graph = this;
 	},
@@ -611,6 +637,8 @@ Graph.prototype = {
 		}
 	},
 	clone: function(owner, version, deepestSubgraph, topLevel){
+		console.log("version passed: " + version);
+		$.cookie("editgraph", "true", {path:'/'});
 		var cloneGraph = new Graph();
 		cloneGraph.id = -1;
 		if(!owner){
@@ -619,6 +647,7 @@ Graph.prototype = {
 			deepestSubgraph = this.getDeepestSubgraph();
 			topLevel = cloneGraph;
 		}
+		if(version == undefined){console.log("version undefined. setting version to: "+(this.version+1));}
 		cloneGraph.version = version || this.version+1;
 		cloneGraph.parent = owner;
 		

@@ -105,7 +105,8 @@ function getTopLevelGraphsForStudentProject(course, project, student, displayFun
 				graph.id = graphInfo.id;
 				if(graphInfo.parentnodeid<=0){
 					graph.parent = false;
-					student.getGraphHistoryOf(project).addGraph(graph);
+					graph.version = graphInfo.version;
+					student.getGraphHistoryOf(project).addGraph(graph, true); //objects come in reverse order from db so add to front of db
 				}
 				else{
 					graph.parent = graphInfo.parentnodeid;
@@ -157,7 +158,6 @@ function getTopLevelGraphsForStudentProject(course, project, student, displayFun
 					}
 				}
 			}
-			
 			//get responses
 			var graphHistory = student.getGraphHistoryOf(project);
 			for(var i=0; i<graphHistory.graphs.length; i++){

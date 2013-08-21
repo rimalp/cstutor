@@ -1050,12 +1050,19 @@ Database.prototype = {
 	},
 	
 	// Login and registration
-	validateLogin: function(email, password, callback){
+	validateLogin: function(email, pass, callback){
+		console.log("jsldfkjsdlkfj==========" + pass);
 		client.query("SELECT * FROM student WHERE email='"+email+"'", function(err, result){
 			if(err) callback(err);
 			else{
 				if(result.rowCount == 1){
 					result.success = true;
+					if(result.rows[0].password == pass){
+						result.correctPassword = true;
+					}else{
+						result.correctPassword = false;
+					}
+
 					result.rows[0].isAdmin = false;
 					callback(null, result);
 				}else{
@@ -1064,6 +1071,11 @@ Database.prototype = {
 						else{
 							if(result.rowCount == 1){
 								result.success = true;
+								if(result.rows[0].password == pass){
+									result.correctPassword = true;
+								}else{
+									result.correctPassword = false;
+								}
 								result.rows[0].isAdmin = true;
 								callback(null, result);
 							}else{

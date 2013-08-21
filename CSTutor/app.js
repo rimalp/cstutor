@@ -47,7 +47,9 @@ if ('development' == app.get('env')) {
 
 app.get('/', function(req, res){res.render("graph.html");}); //home page
 
-app.get('/login', function(req, res){res.render("login.html");});//login page
+app.get('/login', function(req, res){
+	res.render("login.html");
+});//login page
 
 
 
@@ -265,6 +267,7 @@ app.post('/graph_full', function(req, res){
 			//sendPostResponse(req, res, err, result);
 			console.log("RESULT: " + result);
 			if(err){
+				console.log("Server error: " + err);
 				res.writeHead(500, { 'Content-Type': 'text/plain' });
 				res.end("Error reading the database");
 			}else{

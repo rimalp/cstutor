@@ -6,6 +6,10 @@ var userId = "Jack";
 var currentProject = false;
 var currentStudent = false;
 var currentCourse = false;
+var graphListTitle = "Graphs";
+var studentListTitle = "Students";
+var projectListTitle = "Projects";
+var courseListTitle = "Courses";
 
 var Base = function(title){
 	this.title = title;
@@ -65,7 +69,7 @@ Student.prototype.getLinkType = function(){
 }
 Student.prototype.getGraphHistoryOf = function(project){
 	//look for graph history
-	for(i in this.graphHistories){
+	for(var i=0; i<this.graphHistories.length; i++){
 		if(this.graphHistories[i].project == project){
 			return this.graphHistories[i];
 		}
@@ -144,14 +148,26 @@ var GraphHistory = function(student, project){
 	this.student = student;
 	this.project = project;
 };
-GraphHistory.prototype.addGraph = function(graph){
-	if(this.graphs.length > 0){
+GraphHistory.prototype.addGraph = function(graph, addToFront){
+	if(this.graphs.length > 0 && addToFront != true){
 		var previous = this.graphs[this.graphs.length-1];
 		previous.title = previous.title.substring(0, previous.title.length-9);
 	}
-	graph.version = this.graphs.length+1;
-	graph.title = "Graph Ver. " + (this.graphs.length+1) + "(Current)";
-	this.graphs[this.graphs.length] = graph;
+
+	if(addToFront != true){
+		graph.version = this.graphs.length+1;
+	}
+	if(addToFront == true){
+		graph.title = "Graph Ver. " + graph.version;
+		if(this.graphs.length==0){
+			//append "current"  to the first aka hightest version from db
+			graph.title = graph.title+" (Current)";
+		}
+		this.graphs.unshift(graph);
+	}else{
+		graph.title = "Graph Ver. " + (this.graphs.length+1) + "(Current)";
+		this.graphs[this.graphs.length] = graph;
+	}
 	graph.graphHistory = this;
 };
 GraphHistory.prototype.addResponse = function(response){
@@ -253,6 +269,15 @@ function getStudentsForCourseCallback(course){
 		};
 }
 
+function displayInitSidebox(){
+	//hide the graph-specific side boxes
+	$('#nodeinfo_sidebox').hide();
+	$('#newnode_sidebox').hide();
+	$('#minimap_sidebox').hide();
+	$('#about_sidebox').show();
+	$('#contact_sidebox').show();
+	$('#edit_sidebox').hide();
+}
 
 function init(){
 	onload();
@@ -260,16 +285,26 @@ function init(){
 	detail_view_container = document.getElementById("detail_view_container");
 	center_header = document.getElementById("center_header");
 	
+	mode = $.cookie("mode");
+
+	displayInitSidebox();
+
 	fetchData();
 
-	if(mode == "admin"){
-		showDetailView();
-	}
-	else {
-		showCanvas();
-	}
-	mode = $.cookie("mode");
-	console.log("mode set to: " + mode);
+	showDetailView();	
+	displayWelcomeMessage();
+	
+}
+
+function displayWelcomeMessage(){
+	clearDetailView();
+	console.log("welcome message");
+	var div = document.createElement("h5");
+	var text = "  Welcome to Graph Tutor! Head over to the Courses menu to check out your courses and labs."
+	div.innerHTML = text;
+
+	detail_view.appendChild(div);
+
 }
 
 function addSubMenu(li, array){
@@ -399,6 +434,8 @@ function displayNewProject(course, project, back){
 	var doneButton = document.createElement("button");
 	doneButton.innerHTML = "Done";
 	doneButton.onclick = function(){
+
+
 					if(!project){
 						project = new Project(titleInput.value, course);
 						//create the project
@@ -654,11 +691,12 @@ var backButtonStack = new Array();
 function displayDetail(courses){
 	clearDetailView();
 	showDetailView();
+	displayInitSidebox();
 	
 	setTitle("Courses");
 	backButtonStack.push(getButtonDiv("Courses", function(){backButtonStack.pop(); displayDetail(courses);}));
 	var courseDiv = document.createElement("div");
-	getInfoBoxes("", courses, courseDiv, coursesToCourseOnClickMaker, function(){return "";}, function(){displayNewCourse(courses, true);});
+	getInfoBoxes(courseListTitle, courses, courseDiv, coursesToCourseOnClickMaker, function(){return "";}, function(){displayNewCourse(courses, true);});
 	
 	detail_view.appendChild(courseDiv);
 	
@@ -668,6 +706,7 @@ function displayProfileInformation(){
 	console.log("clicked");
 	clearDetailView();
 	showDetailView();
+	displayInitSidebox();
 	$('#detail_view').load("/views/profile_settings.html");
 }
 
@@ -682,9 +721,9 @@ function displayDetailCourse(course, back){
 	setTitle(course.title, backButtonStack[backButtonStack.length-2]);
 	
 	var projectDiv = document.createElement("div");
-	getInfoBoxes("Projects", course.projects, projectDiv, courseToProjectOnClickMaker, function(){return "";}, function(){displayNewProject(course);});
+	getInfoBoxes(projectListTitle, course.projects, projectDiv, courseToProjectOnClickMaker, function(){return "";}, function(){displayNewProject(course);});
 	var studentDiv = document.createElement("div");
-	getInfoBoxes("Students", course.students, studentDiv, getCourseToStudentOnClickMaker(course), function(){return "";}, function(){displayNewStudent(course);});
+	getInfoBoxes(studentListTitle, course.students, studentDiv, getCourseToStudentOnClickMaker(course), function(){return "";}, function(){displayNewStudent(course);});
 	
 	detail_view.appendChild(projectDiv);
 	detail_view.appendChild(studentDiv);
@@ -710,15 +749,17 @@ function displayDetailProject(project, back){
 		
 	}
 	
-	
-	var editButton = document.createElement("button");
-	editButton.innerHTML = "Edit Lab";
-	editButton.style = "float: right;";
-	editButton.onclick = function(){displayNewProject(project.course, project);};
-	
+	if(mode=="admin"){
+		var editButton = document.createElement("button");
+		editButton.innerHTML = "Edit Lab";
+		editButton.style = "float: right;";
+		editButton.onclick = function(){displayNewProject(project.course, project);};
+		detail_view.appendChild(editButton);
+	}
+
 	detail_view.appendChild(studentDiv);
 	detail_view.appendChild(promptDiv);
-	detail_view.appendChild(editButton);
+	
 }
 
 function displayDetailStudent(student, course, back){
@@ -743,9 +784,16 @@ function displayDetailStudentProject(student, project, back){
 		backButtonStack.push(getButtonDiv(/*student.title + "'s " + project.title*/"Done", function(){backButtonStack.pop(); contractAll(); displayDetailStudentProject(student, project, true);}));
 	setTitle(student.title + "'s " + project.title, backButtonStack[backButtonStack.length-2]);
 	
+	$('#nodeinfo_sidebox').hide();
+	$('#newnode_sidebox').hide();
+	$('#minimap_sidebox').hide();
+	$('#about_sidebox').show();
+	$('#contact_sidebox').show();
+	$('#edit_sidebox').hide();
+
 	var displayFunction = function(){
 		var graphDiv = document.createElement("div");
-		getInfoBoxes("Graphs", student.getGraphHistoryOf(project).graphs, graphDiv, studentProjectToGraphOnClickMaker, function(){return "";}, newGraphFunction);
+		getInfoBoxes(graphListTitle, student.getGraphHistoryOf(project).graphs, graphDiv, studentProjectToGraphOnClickMaker, function(){return "";}, newGraphFunction);
 		currentProject = project;
 		currentStudent = student;
 
@@ -779,6 +827,16 @@ function displayDetailStudentProject(student, project, back){
 }
 
 function newGraphFunction(){
+	$('#nodeinfo_sidebox').show();
+	$('#minimap_sidebox').show();
+	$('#about_sidebox').hide();
+	$('#contact_sidebox').hide();
+	if(mode != "admin"){
+		$('#newnode_sidebox').show();
+		$('#edit_sidebox').show();
+	}	
+
+
 	clearDetailView();
 	showDetailView();
 	var div = document.createElement("div");
@@ -795,6 +853,7 @@ function newGraphFunction(){
 	var currentGraphHistory = currentStudent.getGraphHistoryOf(currentProject);
 	var newGraph = false;
 	if(currentGraphHistory.graphs.length > 0){
+		console.log("cloned graph's version: " + currentGraphHistory.graphs[currentGraphHistory.graphs.length-1].version);
 		newGraph = currentGraphHistory.graphs[currentGraphHistory.graphs.length-1].clone(false);
 	}
 	else{
@@ -802,11 +861,27 @@ function newGraphFunction(){
 		currentGraphHistory.addGraph(newGraph);
 		createGraph(newGraph, function(){showGraph(newGraph); currentProject.executeNewVersionPrompts(currentStudent);});
 	}
+
+	$.cookie("editgraph", "false", {path:'/'});
+
+	//showGraph(newGraph); //no need
 	
-	//showGraph(newGraph);
 }
 
 function showGraph(graph, back){
+	$('#nodeinfo_sidebox').show();
+	$('#minimap_sidebox').show();
+	$('#about_sidebox').hide();
+	$('#contact_sidebox').hide();
+	if(mode != "admin"){
+		$('#newnode_sidebox').show();
+		$('#edit_sidebox').show();
+	}
+
+	//console.log("showing graph");
+
+	$.cookie("editgraph", "false", {path:'/'});
+
 	if(!back)
 		backButtonStack.push(getButtonDiv(graph.title, function(){backButtonStack.pop(); showGraph(graph, true);}));
 	setTitle(graph.title, backButtonStack[backButtonStack.length-2]);
@@ -899,22 +974,58 @@ function studentProjectToGraphOnClickMaker(graph){
 function getInfoBoxes(title, array, parent, onClickMaker, getImagePath, newFunction){
 	parent.innerHTML = "<header class='header' id='detail_header'><h3 id='detail_title'>" + title + "</h3></header>";
 	
-	for(var i=0; i<array.length; i++){
-		var current = array[i];
-		var div = document.createElement("div");
-		div.id = current.title;
-		div.className = "info_block";
-		div.innerHTML = "<img class='info_content' width='100' height='100' src='" + getImagePath() + "'>";
-		var link = document.createElement("a");
-		link.className = "info_content";
-		link.onclick = onClickMaker(current);
-		link.innerHTML = current.title;
-		div.appendChild(link);
-		
-		parent.appendChild(div);
-	}
+	//if graphlist for a project, the order is not according to the version yet. need to synchronize that
+	// if(title===graphListTitle){
+	// 	var tempArray = new Array();
+	// 	for(var i=0; i<array.length; i++){
+	// 		tempArray[array[i].version-1] = array[i]; 
+	// 	}
+	// 	//console.log("temparray: " + JSON.stringify(tempArray));
+	// 	array=tempArray.reverse();
+	// 	//console.log("Array: " + JSON.stringify(array));
+
+	// 	for(var i=0; i<array.length; i++){
+	// 		var current = array[i];
+	// 		var div = document.createElement("div");
+	// 		div.id = current.title;
+	// 		div.className = "info_block";
+	// 		div.innerHTML = "<img class='info_content' width='100' height='100' src='" + getImagePath() + "'>";
+	// 		var link = document.createElement("a");
+	// 		link.className = "info_content";
+	// 		link.onclick = onClickMaker(current);
+	// 		link.innerHTML = current.title;
+	// 		div.appendChild(link);
+			
+	// 		parent.appendChild(div);
+	// 	}
+	// }else{
+		for(var i=0; i<array.length; i++){
+			var current = array[i];
+			var div = document.createElement("div");
+			div.id = current.title;
+			div.className = "info_block";
+			div.innerHTML = "<img class='info_content' width='100' height='100' src='" + getImagePath() + "'>";
+			var link = document.createElement("a");
+			link.className = "info_content";
+			link.onclick = onClickMaker(current);
+			link.innerHTML = current.title;
+			div.appendChild(link);
+			
+			parent.appendChild(div);
+		}
+	// }
 	
-	if(newFunction	){
+
+
+	
+	if(newFunction){
+		var mode = $.cookie("mode");
+		if((mode == "admin" && title==graphListTitle) || (mode=="student" && title===studentListTitle)
+			|| (mode == "student" && title===projectListTitle) || (mode=="student" && title===courseListTitle))
+		{
+			return;	
+		} 
+		//console.log("graph list: " + parent);
 		var div = document.createElement("div");
 		div.className = "info_block";
 		div.innerHTML = "<img class='info_content' width='100' height='100' src=''>";
@@ -934,6 +1045,7 @@ function showDetailView(){
 }
 
 function showCanvas(){
+
 	canvas.className = "center_container";
 	detail_view_container.className = "hidden";
 }

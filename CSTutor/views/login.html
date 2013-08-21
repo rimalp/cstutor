@@ -57,6 +57,7 @@
 			document.getElementById('confirm_password_div').style.display = "inherit";
 			document.getElementById('first_name_div').style.display = "inherit";
 			document.getElementById('last_name_div').style.display = "inherit";
+			document.getElementById('login_button').innerHTML = "Submit";
 			document.getElementById('create_button').innerHTML = "Existing User";
 			document.getElementById('login_title').innerHTML = "Create New Account";
 			//clearFields();
@@ -67,6 +68,7 @@
 			document.getElementById('first_name_div').style.display = "none";
 			document.getElementById('last_name_div').style.display = "none";
 			document.getElementById('create_button').innerHTML = "Sign Up!";
+			document.getElementById('login_button').innerHTML = "Log In";
 			document.getElementById('login_title').innerHTML = "Existing User";
 			//clearFields();
 			existing_user = true;
@@ -92,22 +94,29 @@
 					//callback function
 					console.log("Data: " + data + "\nStatus: " + status);
 					var response = JSON.parse(data);
-					
+					console.log("login data" + response);
 					if(response.success){
-						document.getElementById('error_message').setAttribute('style', 'color: green');
-						document.getElementById('error_message').innerHTML = 'Logged In!';
-						$.cookie("email", response.rows[0].email, {path: '/'});
-						$.cookie("password", response.rows[0].password, {path: '/'});
-						$.cookie("firstName", response.rows[0].firstname, {path: '/'});
-						$.cookie("lastName", response.rows[0].lastname, {path: '/'});
-						if(response.rows[0].isAdmin){
-							$.cookie("mode", "admin", {path: '/'});
+						if(!response.correctPassword){
+							document.getElementById('error_message').setAttribute('style', 'color: red');
+							document.getElementById('error_message').innerHTML = 'Incorrect password!';
 						}else{
-							$.cookie("mode", "student", {path: '/'});
+							document.getElementById('error_message').setAttribute('style', 'color: green');
+							document.getElementById('error_message').innerHTML = 'Logged In!';
+							$.cookie("email", response.rows[0].email, {path: '/'});
+							$.cookie("password", response.rows[0].password, {path: '/'});
+							$.cookie("firstName", response.rows[0].firstname, {path: '/'});
+							$.cookie("lastName", response.rows[0].lastname, {path: '/'});
+							if(response.rows[0].isAdmin){
+								$.cookie("mode", "admin", {path: '/'});
+								//$.cookie("editgraph", "false", {path:'/'}); //dont want the professors to edit the graph
+							}else{
+								$.cookie("mode", "student", {path: '/'});
+							}
+							//alert("user is: " + $.cookie("mode"));
+							//load the home page of the user
+							window.location.href = "/";
 						}
-						//alert("user is: " + $.cookie("mode"));
-						//load the home page of the user
-						window.location.href = "/";
+						
 					}
 				});
 			}
