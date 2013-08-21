@@ -545,6 +545,9 @@ Node.prototype = {
 		this.body = r.circle(this.x, this.y, this.radius).attr({fill: this.color, "fill-opacity": .8, stroke: this.color});
 		//this.top = r.circle(this.x, this.y - this.radius*.9, this.radius*.1).attr({fill: "black", stroke: "black", "fill-opacity": .8});
 		this.bottom = r.circle(this.x, this.y + this.radius*.9, this.radius*.1).attr({fill: "black", stroke: "black", "fill-opacity": .8});
+		if(this.subgraph){
+			this.data += "...";
+		}
 		this.text = r.text(this.x, this.y, this.data);
 		
 		this.body.drag(this.getOnMoveFunction(), this.getOnStartFunction(), this.getOnEndFunction());
