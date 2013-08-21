@@ -17,6 +17,8 @@ var renderer = false;
 var centerX = 0;
 var centerY = 0;
 var uniqueID = -1;
+var level = 1; //the level that you are currently in
+var prevNode = false; //previously selected node
 
 var onload = function(){
 	width = 5000;//document.getElementById("canvas").offsetWidth - 10;
@@ -139,6 +141,7 @@ var contractAll = function(){
 		currentGraph = focusNode.graph;
 		focusNode = focusNode.owner;
 	}
+	level = 1;
 };
 
 (function (R) {
@@ -343,7 +346,13 @@ Node.prototype = {
 				this.animate({"fill-opacity": .3}, 500);
 		
 			setInfo(selfRef.data, selfRef.description);
-		};
+			//set the highlighted node 
+			if(prevNode){
+				prevNode.body.attr({stroke: prevNode.color, "stroke-width":"0"});
+			}
+			selfRef.body.attr({stroke: "#000000", "stroke-width":"3"});
+			prevNode = selfRef;
+			};
 	},
 	getOnEndFunction: function(){
 		var selfRef = this;
@@ -403,6 +412,7 @@ Node.prototype = {
 		var selfRef = this;
 		var growth = 200;
 		var time = 2000;
+
 		
 		return function(e){
 			if(!focusNode.subgraph ||focusNode.subgraph.contains(selfRef.id)){
@@ -413,6 +423,7 @@ Node.prototype = {
 				
 				if(!selfRef.subgraph){
 					selfRef.subgraph = new Graph();
+					//selfRef.data = selfRef.data + "...";
 					selfRef.subgraph.title = selfRef.data + "'s subgraph";
 					selfRef.subgraph.version = currentGraph.version;
 					selfRef.subgraph.topLevel = false;
@@ -438,6 +449,7 @@ Node.prototype = {
 		};
 	},
 	expand: function(){
+		level += 1;
 		//hide current graph
 		for(var i=0; i<this.graph.nodes.length; i++){
 			if(this.graph.nodes[i] != this){
@@ -469,6 +481,7 @@ Node.prototype = {
 		}, 1000);
 	},
 	contract: function(time){
+		level -= 1;
 		if(arguments.length == 0)
 			time = 1000;
 		
@@ -607,6 +620,7 @@ Graph.prototype = {
 	
 	//GUI Functions
 	show: function(){
+		if(this.parent==false){level = 1;}//to show the current level to the users
 		for(var i=0; i<this.nodes.length; i++)
 			this.nodes[i].show();
 		for(var i=0; i<this.edges.length; i++)

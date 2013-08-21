@@ -878,12 +878,16 @@ function showGraph(graph, back){
 		$('#edit_sidebox').show();
 	}
 
-	//console.log("showing graph");
+	console.log("showing graph");
 
 	$.cookie("editgraph", "false", {path:'/'});
 
-	if(!back)
-		backButtonStack.push(getButtonDiv(graph.title, function(){backButtonStack.pop(); showGraph(graph, true);}));
+	if(!back){
+		backButtonStack.push(getButtonDiv(graph.title, function(){
+			backButtonStack.pop(); 
+			howGraph(graph, true);
+		}));
+	}
 	setTitle(graph.title, backButtonStack[backButtonStack.length-2]);
 	
 	showCanvas();
