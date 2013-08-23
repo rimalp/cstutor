@@ -21,11 +21,11 @@
 		}
 
 		function logout(){
-				$.cookie("mode", null);
-				$.cookie("email", null);
-				$.cookie("password", null);
-				$.cookie("firstname", null);
-				$.cookie("lastname", null);
+		        $.removeCookie("mode");
+		        $.removeCookie("email");
+		        $.removeCookie("password");
+		        $.removeCookie("firstName");
+		        $.removeCookie("lastName");
 				window.location.href ='/login';
 		}
 	</script>
@@ -35,6 +35,11 @@
 
 
 		$(document).ready(function(){	
+		    //redirect to login page if a previous user has logged out and the cookie user info is deleted
+		    if($.cookie("email") == undefined){
+		        window.location.href="/login";
+		    }
+		    
 			$('#user_logout').append($('#user_icon'));
 			$('#user_logout').text("Logout, "+$.cookie("firstName"));
 			$.cookie('editgraph', "true", { path: "/" }); //setting true for initial data fetch and graph construction
@@ -151,8 +156,12 @@
 		
 		.gradbg{
 			/*background-color: #84B4D5;
-			background-image: linear-gradient(to top right, #8CA3FF, #34A4FA);*/
-			background-image: linear-gradient(to top right, #29061B, #329DEF);
+			background-image: linear-gradient(to top right, #29061B, #329DEF);*/
+			background: url('bubbles.png') no-repeat center center fixed; 
+              -webkit-background-size: cover;
+              -moz-background-size: cover;
+              -o-background-size: cover;
+              background-size: cover;
 		}
 		
 		.side-box{

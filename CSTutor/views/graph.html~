@@ -1,54 +1,163 @@
 <html>
 <head>
+	<link rel="stylesheet" href="http://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css" />
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+	<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
 	<script type="text/javascript" src="../public/javascripts/raphael.js"></script>
-	<script type="text/javascript" src="../public/javascripts/jquery-1.8.2.js"></script>
 	<script type="text/javascript" src="../public/javascripts/dracula_graffle.js"></script>
 	<script type="text/javascript" src="../public/javascripts/database_requests.js"></script>
 	<script type="text/javascript" src="../public/javascripts/graph.js"></script>
 	<script type="text/javascript" src="../public/javascripts/menu.js"></script>
 	<script type="text/javascript" src="../public/javascripts/newproject.js"></script>
-	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+	<script src="/jquery.cookie.js"></script>
 	<link href="../bootstrap/css/bootstrap.css" rel="stylesheet">
 	<link href="../bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
 
-
-	<!-- <link href="../assets/css/bootstrap.css" rel="stylesheet">
-	<link href="../assets/css/bootstrap-responsive.css" rel="stylesheet"> -->
-
-	<!-- Fav and touch icons -->
-	<!-- <link rel="apple-touch-icon-precomposed" sizes="144x144" href="../assets/ico/apple-touch-icon-144-precomposed.png">
-	<link rel="apple-touch-icon-precomposed" sizes="114x114" href="../assets/ico/apple-touch-icon-114-precomposed.png">
-	<link rel="apple-touch-icon-precomposed" sizes="72x72" href="../assets/ico/apple-touch-icon-72-precomposed.png">
-	<link rel="apple-touch-icon-precomposed" href="../assets/ico/apple-touch-icon-57-precomposed.png">
-	<link rel="shortcut icon" href="../assets/ico/favicon.png"> -->
 	
 	<script type="text/javascript">
 
 		var setInfo = function(name, description){
 			document.getElementById("info").innerHTML = "Title: " + name + "<br>Description: " + description;
 		}
+
+		function logout(){
+		        $.removeCookie("mode");
+		        $.removeCookie("email");
+		        $.removeCookie("password");
+		        $.removeCookie("firstName");
+		        $.removeCookie("lastName");
+				window.location.href ='/login';
+		}
 	</script>
 
 
 	<script>
-		$(document).ready(function(){	
 
-  			$("#buttonId").click(function(){
-  			console.log("clicked!");
-  			$.post('/login', { name: "John", time: "2pm" }, function(data, status) {
-			  alert("Data: " + data + "\nStatus: " + status);
-			});	
-    		// $.get("/login",function(data,status){
-      // 			alert("Data: " + data + "\nStatus: " + status);
-    		// });
-  			});
+
+		$(document).ready(function(){	
+		    //redirect to login page if a previous user has logged out and the cookie user info is deleted
+		    if($.cookie("email") == undefined){
+		        window.location.href="/login";
+		    }
+		    
+			$('#user_logout').append($('#user_icon'));
+			$('#user_logout').text("Logout, "+$.cookie("firstName"));
+			$.cookie('editgraph', "true", { path: "/" }); //setting true for initial data fetch and graph construction
+			$('#btn_save').hide();
+  			// Attaching to the save button click button click 
+			$("#btn_save").on("click", function () {
+			    $.cookie('editgraph', "false", { path: "/" });
+			    $('#btn_save').hide();
+			    $('#btn_edit').show();
+			    console.log("Edit cookie set to: " + $.cookie('editgraph'));
+			    //call the function in menu.js that saves the graph
+
+			});
+			$("#btn_edit").on("click", function () {
+				$('#btn_edit').hide();
+				$('#btn_save').show();
+			    $.cookie('editgraph', "true", { path: "/" });
+			    console.log("Edit cookie set to: " + $.cookie('editgraph'));
+			});
+
 		});
 	</script>
+
+	<style type="text/css">   
+
+
+		.dropdown-menu {
+		    background-clip: padding-box;
+		    background-color: red;
+		    border: 1px solid rgba(0, 0, 0, 0.2);
+		    border-radius: 6px 6px 6px 6px;
+		    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+		    display: none;
+		    float: left;
+		    left: 0;
+		    list-style: none outside none;
+		    margin: 2px 0 0;
+		    min-width: 160px;
+		    padding: 5px 0;
+		    position: absolute;
+		    top: 100%;
+		    z-index: 1000;
+		}
+
+		.btn-group.open .btn.dropdown-toggle {
+		  background-color: red;
+		}
+
+		.btn-group.open .btn.dropdown-toggle {
+		  background-color:lime;
+		}
+
+		.navbar .nav li.dropdown.open > .dropdown-toggle,
+		.navbar .nav li.dropdown.active > .dropdown-toggle,
+		.navbar .nav li.dropdown.open.active > .dropdown-toggle {
+		  color:white;
+		  background-color:Teal;
+		}
+
+		.navbar .nav > li > a {
+		    color: #0066CC;
+		    float: none;
+		    padding: 10px 15px;
+		    text-decoration: none;
+		    text-shadow: 0 0px 0 #ffffff;
+		}
+
+
+		.navbar .brand {
+		  display: block;
+		  float: left;
+		  padding: 10px 20px 10px;
+		  margin-left: -20px;
+		  font-size: 20px;
+		  font-weight: 200;
+		  color: #0066CC;
+		  text-shadow: 0 0px 0 #ffffff;
+		}
+
+		.navbar .nav > li > a:focus,
+		.navbar .nav > li > a:hover {
+		  color: black;
+		  text-decoration: none;
+		  background-color: transparent;
+		}
+
+		.navbar-text {
+		  margin-bottom: 0;
+		  line-height: 40px;
+		  color: black;
+		}
+
+		.dropdown-menu li > a {
+		  display: block;
+		  padding: 3px 20px;
+		  clear: both;
+		  font-weight: normal;
+		  line-height: 20px;
+		  color: white;
+		  white-space: nowrap;
+		}
+
+		.navbar-link {
+		  color: white;
+		}
+
+		.navbar-link:hover {
+		  color: blue;
+		}
+
+		</style>
 	
 	<style type="text/css">
 		
 		.gradbg{
-			background-color: #84B4D5;
+			/*background-color: #84B4D5;
+			background-image: linear-gradient(to top right, #29061B, #329DEF);*/
+			background-image:url('bubbles.png');
 		}
 		
 		.side-box{
@@ -123,7 +232,7 @@
 			width: 0px;
 		}
 		
-		h1{
+		h3{
 			margin: 0px 0px;
 			padding: 5px;
 		}
@@ -145,12 +254,56 @@
 			border-radius: 0px 0px 6px 6px;
 		}
 		
+		button{
+			background-color: rgb(80, 129, 179);
+			color: white;
+			display: inline-block;
+			text-decoration: none;
+			border-radius: 0.3125em 0.3125em 0.3125em 0.3125em;
+			font-family: "Droid Sans",Helvetica,Arial,sans-serif;
+			line-height: 1.125em;
+			border: 1px solid rgb(217, 219, 221);
+			width: 90px;
+			height: 30px;
+		}
+
+
+		
 	</style>
 </head>
 
 <body onload="init()" >
+
 	
 	<div class="row-fluid gradbg" >
+		<div id="top" style="height:7%; width: 100%; text-aligh:center">
+
+				<div class="navbar navbar-fixed-top">
+				    <div class="navbar-inner">
+				        <div class="container">
+				            <a title="" class="brand" href="#">Graph Tutor<!-- <img src="/CSTutorIcon.gif"/> --></a>
+				                <ul class="nav pull-right">
+				                <li class="divider-vertical">
+				                <li><a href="">About</a></span></li>
+				                <li class="divider-vertical">
+				                <li><a href="">Contact</a></li>
+				                <li class="divider-vertical">
+				                <li class="dropdown"><a id="user_logout" href="javascript:logout()" class="dropdown-toggle" data-toggle="dropdown">Logout<i id="user_icon" class="icon-user"></i></a>
+				                    <!-- <ul class="dropdown-menu">
+				                        <li><a href="">My account</a></li>
+				                        <li><a href="/accounts/logout/">Log out</a></li>
+				                    </ul> -->
+				                </li>
+				            </ul>
+				            </div>
+				       </div>
+				</div>
+				
+
+
+		</div>
+
+
 	
 		<!-- left-->
 		<div class="row-fluid span2" style="margin: 0px; width: 17%;">
@@ -160,9 +313,9 @@
 				</div> -->
 				<!-- Admin Menu -->
 				<div id="admin-menu">
-					<button class="navigate_button top_navigate_button">Home</button><br>
+					<button class="navigate_button top_navigate_button" onclick="displayWelcomeMessage();">Home</button><br>
 					<button class="navigate_button" onclick="displayDetail(courses);">Courses</button><br>
-					<button class="navigate_button bottom_navigate_button">Settings</button>
+					<button class="navigate_button bottom_navigate_button" onclick="displayProfileInformation();">Account</button>
 				</div>
 			</div>
 		</div>
@@ -170,7 +323,9 @@
 		<!-- center-->
 		<div class="span8" style="margin: 0px; width: 66%;">
 			<!-- header -->
-			<header id="center_header" class="title"><h1>header</h1></header>
+			<div id="center_header" class="title">
+				<h3>Welcome to Graph Tutor!</h3>
+			</div>
 			
 			<!-- detail view -->
 			<div id="detail_view_container" class="center_container">
@@ -185,52 +340,66 @@
 		<!-- right -->
 		<div class="span2" style="margin: 0px; width: 17%;">
 			<div style="position: fixed; margin: .5%; width: 16%;">
+
+				<!-- Edit/Done-->
+				<div id="edit_sidebox" class="side-box">
+					<header class="side-box-header"><h4 style="margin: 0px; color: #0066CC;">Change Design</h4></header>
+					<div class="side-box-body" style="height: 70px; ">
+						&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+	 					<button  id="btn_save" onclick="contractAll();">Save </button>
+	 					<button id="btn_edit">Edit</button><br>
+	 					Note: Changes made during edit have to be reverted manually.
+
+					</div>
+				</div>
+
 				<!-- Node Info -->
-				<div class="side-box">
-					<header class="side-box-header"><h1 style="margin: 0px;">Node Info</h1></header>
+				<div id = "nodeinfo_sidebox" class="side-box">
+					<header class="side-box-header"><h4 style="margin: 0px; color: #0066CC;">Node Info</h4></header>
 					<div id="info" class="side-box-body">
 						Title: <br/>
 						Description:
 					</div>
 				</div>
 				<!-- New Node -->
-				<div class="side-box">
-					<header class="side-box-header"><h1 style="margin: 0px;">New Node</h1></header>
+				<div id="newnode_sidebox" class="side-box">
+					<header class="side-box-header"><h4 style="margin: 0px; color: #0066CC;">New Node</h4></header>
 					<div class="side-box-body">
 						<div class="row-fluid">
 							<input id="node_name" type="text" placeholder="Title"/>
 							<textarea id="node_description" placeholder="Description" class="span12" style="resize: none;"></textarea>
 						</div>
 						<div class="row-fluid">
-							<button class="offset5" id="add_node" onclick="addNode(document.getElementById('node_name').value, document.getElementById('node_description').value);">add</button>
+							<button class="offset5" id="add_node" onclick="addNode(document.getElementById('node_name').value, document.getElementById('node_description').value);">Add</button>
 						</div>
 					</div>
 				</div>
 				<!-- Minimap -->
-				<div class="side-box">
-					<header class="side-box-header"><h1 style="margin: 0px;">MiniMap</h1></header>
-					<div id="minimap" class="side-box-body" style="height: 200px;">
-						
+				<div id="minimap_sidebox" class="side-box">
+					<header class="side-box-header"><h4 style="margin: 0px; color: #0066CC;">MiniMap</h4></header>
+					<div id="minimap" class="side-box-body" style="height: 200px;">						
 					</div>
 				</div>
+
+				<!-- About -->
+				<div id="about_sidebox" class="side-box">
+					<header class="side-box-header"><h4 style="margin: 0px; color: #0066CC;">About/Help</h4></header>
+					<div class="side-box-body" style="height: 120px;">
+						About the app and any context-specific help/instruction.
+					</div>
+				</div>
+				<!-- Contact-->
+				<div id="contact_sidebox" class="side-box">
+					<header class="side-box-header"><h4 style="margin: 0px; color: #0066CC;">Contact</h4></header>
+					<div class="side-box-body" style="height: 150px;">
+						Please contact Jack (kellerj@lafayette.edu) or Prabhat (rimalp@lafayette.edu) if you have issues. Thank you!
+					</div>
+				</div>
+				
 			</div>
 		</div>
 	</div>
-	
-<!--    <script src="../bootstrap/js/bootstrap.js"></script>
-    <script src="../bootstrap/js/jquery.js"></script>
-    <script src="../bootstrap/js/bootstrap-transition.js"></script>
-    <script src="../bootstrap/js/bootstrap-alert.js"></script>
-    <script src="../bootstrap/js/bootstrap-modal.js"></script>
-    <script src="../bootstrap/js/bootstrap-dropdown.js"></script>
-    <script src="../bootstrap/js/bootstrap-scrollspy.js"></script>
-    <script src="../bootstrap/js/bootstrap-tab.js"></script>
-    <script src="../bootstrap/js/bootstrap-tooltip.js"></script>
-    <script src="../bootstrap/js/bootstrap-popover.js"></script>
-    <script src="../bootstrap/js/bootstrap-button.js"></script>
-    <script src="../bootstrap/js/bootstrap-collapse.js"></script>
-    <script src="../bootstrap/js/bootstrap-carousel.js"></script>
-    <script src="../bootstrap/js/bootstrap-typeahead.js"></script> -->
+
 </body>
 </html>
 

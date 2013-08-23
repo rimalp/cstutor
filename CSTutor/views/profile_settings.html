@@ -1,0 +1,77 @@
+<html>
+	<head>
+		<script src="/jquery.cookie.js"></script>
+		<link href="../bootstrap/css/bootstrap.css" rel="stylesheet">
+		<link href="../bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
+		<script>
+			$(document).ready(
+				function setNames(){
+					console.log("setting names");
+					document.getElementById("first_name").value = $.cookie('firstName');
+					document.getElementById("last_name").value = $.cookie('lastName');
+				}
+			);
+
+			function changeProfileInfo(){
+				var firstNameNew = $('#first_name').val();
+				var lastNameNew = $('#last_name').val();
+				var oldPassword = $('#old_password').val();
+				var newPassword = $('#new_password').val();
+				var newPasswordConfirm = $('#new_password_confirm').val();
+
+				if(oldPassword != $.cookie('password')){
+					document.getElementById("profile_message").innerHTML = "Your old password is wrong!";
+				}else if(newPassword != newPasswordConfirm ){
+					document.getElementById("profile_message").innerHTML = "Your new passwords dont match!";		
+				}else if(newPassword.length == 0){
+					document.getElementById("profile_message").innerHTML = "Can't leave the password field empty!";
+				}else{
+					//update the profile information
+					if($.cookie("mode") == "admin"){
+						$.post('/create_professor', {email:$.cookie("email") , firstName:firstNameNew, lastName:lastNameNew , password:newPassword}, function(data, status){
+							if(status != 500){
+								document.getElementById("profile_message").innerHTML = "Successfully updated.";
+							}else{
+								document.getElementById("profile_message").innerHTML = "Error updating!";
+							}
+						});
+					}else{
+						$.post('/create_student', {email:$.cookie("email") , firstName:firstNameNew, lastName:lastNameNew, password:newPassword}, function(data, status){
+							if(status != 500){
+								document.getElementById("profile_message").innerHTML = "Successfully updated.";
+							}else{
+								document.getElementById("profile_message").innerHTML = "Error updating!";
+							}
+						});
+					}
+				}
+			}
+
+		</script>
+
+	</head>
+
+<body onload="setNames();">
+	  <p><h3>Profile Information.</h3></p><br>
+		
+	  
+	  <label>First name: </label>  
+	  <input id="first_name" type="text" class="span3" value="">  
+	  <label>Last name: </label>  
+	  <input id="last_name" type="text" class="span3" value=""> 
+	  <label>Old Password: </label>  
+	  <input id="old_password" type="password" class="span3"> 
+	  <label>New Password: </label>  
+	  <input id="new_password" type="password" class="span3"> 
+	  <label>Re-type new password: </label> 
+	  <input id="new_password_confirm" type="password"> 
+		
+	 
+	  <button id="profile_settings_btn" onclick="changeProfileInfo()">Submit</button> 
+
+	  <br><br>
+
+	  <p id="profile_message"></p> 
+
+</body>
+</html>
